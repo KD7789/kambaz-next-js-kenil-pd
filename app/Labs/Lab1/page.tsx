@@ -297,7 +297,7 @@ to get dummy text<br/>
 
 <h4>Anchor tag</h4>
 Please
-<a href="https://github.com/KD7789/kanbas-next-js" id="wd-github">click here</a>
+<a href="https://github.com/KD7789/kambaz-next-js-kenil-pd" id="wd-github">click here</a>
 for github repository.<br/>
 
 
