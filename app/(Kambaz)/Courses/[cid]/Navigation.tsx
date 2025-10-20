@@ -1,4 +1,69 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import React from "react";
+
+type Props = {
+  cid: string;
+};
+
+const links = [
+  { label: "Home", internal: true },
+  { label: "Modules", internal: true },
+  { label: "Piazza", internal: false, url: "https://piazza.com/class/mf9tt3f8vlw16f" },
+  { label: "Zoom", internal: false, url: "https://www.zoom.com/" },
+  { label: "Assignments", internal: true },
+  { label: "Quizzes", internal: false, url: "https://northeastern.instructure.com/courses/225988/quizzes" },
+  { label: "Grades", internal: false, url: "https://northeastern.instructure.com/courses/225988/grades" },
+  { label: "People", internal: true, customPath: "People/Table" },
+];
+
+export default function CourseNavigation({ cid }: Props) {
+  const pathname = usePathname();
+
+  return (
+    <div id="wd-courses-navigation" className="wd list-group fs-5 rounded-0">
+      {links.map(({ label, internal, url, customPath }) => {
+        // Build full path
+        const href = internal
+          ? `/Courses/${cid}/${customPath || label}`
+          : url!;
+
+        // Determine if this is the active link
+        const isActive =
+          internal && pathname.includes(`/${cid}/${customPath || label}`);
+
+        return internal ? (
+          <Link
+            key={label}
+            href={href}
+            id={`wd-course-${label.toLowerCase()}-link`}
+            className={`list-group-item border-0 ${
+              isActive ? "active" : "text-danger"
+            }`}
+          >
+            {label}
+          </Link>
+        ) : (
+          <a
+            key={label}
+            href={href}
+            id={`wd-course-${label.toLowerCase()}-link`}
+            className="list-group-item text-danger border-0"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {label}
+          </a>
+        );
+      })}
+    </div>
+  );
+}
+
+
+/* import Link from "next/link";
 import React from "react";
 export default function CourseNavigation({ cid }: { cid: string }) {
   return (
@@ -22,3 +87,4 @@ export default function CourseNavigation({ cid }: { cid: string }) {
     </div>
   );}
 
+ */
