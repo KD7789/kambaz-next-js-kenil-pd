@@ -9,10 +9,31 @@ import { FaPlus, FaEllipsisV } from "react-icons/fa";
 import LessonControlButtons from "../Modules/LessonControlButtons";
 
 export default function Assignments() {
+  type Assignment = {
+    _id: string;
+    title: string;
+    course: string;
+    points: number;
+    group: string;
+    gradeDisplay: string;
+    submissionType: string;
+    onlineEntryOptions: string[];
+    assignTo: string;
+    dueDate: string;
+    availableFrom: string;
+    availableUntil: string;
+    description: string;
+  };
+
   const { cid } = useParams();
+  const courseAssignments = (db.assignments as Assignment[]).filter(
+    (a) => a.course === cid
+  );
+  
+  /* const { cid } = useParams();
   const courseAssignments = db.assignments.filter(
     (a: any) => a.course === cid
-  );
+  ); */
 
   return (
     <div id="wd-assignments" className="p-4">
@@ -68,7 +89,7 @@ export default function Assignments() {
           </div>
 
           <ListGroup className="wd-assignments rounded-0">
-            {courseAssignments.map((assignment: any) => (
+            {courseAssignments.map((assignment: Assignment) => (
               <ListGroupItem key={assignment._id} className="wd-assignment p-3 ps-2">
                 <BsGripVertical className="me-2 fs-3" />
 

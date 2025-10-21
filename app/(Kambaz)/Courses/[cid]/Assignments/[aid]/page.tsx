@@ -7,10 +7,28 @@ import Link from "next/link";
 
 export default function AssignmentEditor() {
   const { aid, cid } = useParams();
-  const assignment = useMemo(
+  type Assignment = {
+    _id: string;
+    title: string;
+    description: string;
+    points: number;
+    group: string;
+    gradeDisplay: string;
+    submissionType: string;
+    onlineEntryOptions: string[];
+    assignTo: string;
+    dueDate: string;
+    availableFrom: string;
+    availableUntil: string;
+  };
+  const assignment: Assignment | undefined = useMemo(() => {
+    return (db.assignments as Assignment[]).find((a) => a._id === aid);
+  }, [aid]);
+  
+  /* const assignment = useMemo(
     () => db.assignments.find((a: any) => a._id === aid),
     [aid]
-  );
+  ); */
 
   return (
     <div id="wd-assignments-editor" className="p-4">
