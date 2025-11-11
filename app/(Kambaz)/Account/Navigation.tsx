@@ -1,14 +1,54 @@
+"use client";
 import Link from "next/link";
-import React from "react";
-export default function AccountNavigation() {
- return (
-   <div id="wd-account-navigation" className="wd list-group fs-5 rounded-0">
-     <Link href="Signin" id="wd-signin-screen"
-      className="list-group-item active border-0">Signin</Link>
-      <Link href="Signup" id="wd-signup-screen"
-      className="list-group-item text-danger border-0">Signup</Link>
-      <Link href="Profile" id="wd-profile-screen"
-      className="list-group-item text-danger border-0">Profile</Link>
-    </div>
-);}
+import { usePathname } from "next/navigation";
+import { Nav } from "react-bootstrap";
+import { useSelector } from "react-redux";
+import { RootState } from "../store";
 
+export default function AccountNavigation() {
+  const { currentUser } = useSelector(
+    (state: RootState) => state.accountReducer
+  );
+  const links = currentUser ? ["Profile"] : ["Signin", "Signup"];
+  const pathname = usePathname();
+
+  return (
+    <Nav
+      className="p-3"
+      style={{
+        display: "flex",
+        flexDirection: "row",
+        alignItems: "center",
+        gap: "20px", // ✅ space between buttons
+        backgroundColor: "white",
+      }}
+    >
+      {links.map((link) => {
+        const isActive = pathname.endsWith(link.toLowerCase());
+        return (
+          <Link
+            key={link}
+            href={`/Account/${link}`}
+            id={`wd-${link.toLowerCase()}-link`}
+            style={{
+              backgroundColor: isActive ? "#b30000" : "#dc3545", // darker when active
+              color: "white",
+              borderRadius: "6px",
+              width: "120px", // ✅ consistent button width
+              height: "40px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              textDecoration: "none",
+              fontWeight: 600,
+              fontSize: "16px",
+              transition: "background-color 0.2s ease",
+            }}
+          >
+            {link}
+          </Link>
+        );
+      })}
+    </Nav>
+  );
+}

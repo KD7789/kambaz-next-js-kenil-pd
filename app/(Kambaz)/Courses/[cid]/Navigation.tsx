@@ -10,7 +10,7 @@ type Props = {
 
 const links = [
   { label: "Home", internal: true },
-  { label: "Modules", internal: true },
+  { label: "Modules", internal: true},
   { label: "Piazza", internal: false, url: "https://piazza.com/class/mf9tt3f8vlw16f" },
   { label: "Zoom", internal: false, url: "https://www.zoom.com/" },
   { label: "Assignments", internal: true },
@@ -25,12 +25,11 @@ export default function CourseNavigation({ cid }: Props) {
   return (
     <div id="wd-courses-navigation" className="wd list-group fs-5 rounded-0">
       {links.map(({ label, internal, url, customPath }) => {
-        // Build full path
+       
         const href = internal
           ? `/Courses/${cid}/${customPath || label}`
           : url!;
 
-        // Determine if this is the active link
         const isActive =
           internal && pathname.includes(`/${cid}/${customPath || label}`);
 

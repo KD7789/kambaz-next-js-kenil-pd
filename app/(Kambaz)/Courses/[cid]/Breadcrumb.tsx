@@ -1,13 +1,19 @@
 "use client";
-import React from "react";
 import { usePathname } from "next/navigation";
 
+export default function Breadcrumb({
+  course,
+}: {
+  course: { name: string } | undefined;
+}) {
+  const pathname = usePathname();
+  const page = pathname.split("/").pop();
 
-export default function Breadcrumb({ course }: { course: { name: string } | undefined; }) {
- const pathname = usePathname();
- return (
-   <span>
-      {course?.name} &gt; {pathname.split("/").pop()}
-   </span>
- );
+  return (
+    <span style={{ color: "#d63b3b", fontWeight: 600 }}>
+      {course?.name}
+      <span style={{ color: "#444", margin: "0 8px" }}>&gt;</span>
+      {page}
+    </span>
+  );
 }
