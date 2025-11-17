@@ -8,26 +8,13 @@ import {
   setAssignments,
 } from "../reducer";
 
+import type { Assignment } from "../reducer";   // ← ADD THIS
+
+
 import * as client from "../../../client";
 
 import { useEffect, useState, ChangeEvent } from "react";
 import { Form, Button, Row, Col } from "react-bootstrap";
-
-interface Assignment {
-  _id: string;
-  title: string;
-  description: string;
-  course: string;
-  points: number;
-  group: string;
-  gradeDisplay: string;
-  submissionType: string;
-  onlineEntryOptions: string[];
-  assignTo: string;
-  dueDate: string;
-  availableFrom: string;
-  availableUntil: string;
-}
 
 export default function AssignmentEditor() {
   const { aid, cid } = useParams<{ aid: string; cid: string }>();
@@ -75,10 +62,10 @@ export default function AssignmentEditor() {
   /** SAVE: Create or Update */
   const handleSave = async () => {
     if (existingAssignment) {
-      const updated = await client.updateAssignment(assignment);
+      const updated = await client.updateAssignment(assignment) as Assignment;
       dispatch(updateAssignmentInStore(updated));
     } else {
-      const created = await client.createAssignmentForCourse(cid!, assignment);
+      const created = await client.createAssignmentForCourse(cid!, assignment) as Assignment;
       dispatch(setAssignments([...assignments, created]));
     }
 

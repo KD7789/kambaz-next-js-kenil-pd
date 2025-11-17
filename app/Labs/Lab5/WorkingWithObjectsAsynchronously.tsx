@@ -1,24 +1,39 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
 import { FormControl } from "react-bootstrap";
 import * as client from "./client";
 
+/* -----------------------------------------
+   Types
+----------------------------------------- */
+interface Assignment {
+  title: string;
+  description: string;
+  due: string;
+  completed: boolean;
+}
+
 export default function WorkingWithObjectsAsynchronously() {
-  const [assignment, setAssignment] = useState<any>({});
+  const [assignment, setAssignment] = useState<Assignment | null>(null);
 
   const fetchAssignment = async () => {
-    const serverAssignment = await client.fetchAssignment();
+    const serverAssignment: Assignment = await client.fetchAssignment();
     setAssignment(serverAssignment);
   };
 
   const updateTitle = async (title: string) => {
-    const updatedAssignment = await client.updateTitle(title);
-    setAssignment(updatedAssignment);
+    const updated: Assignment = await client.updateTitle(title);
+    setAssignment(updated);
   };
 
   useEffect(() => {
     fetchAssignment();
   }, []);
+
+  if (!assignment) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div id="wd-asynchronous-objects">

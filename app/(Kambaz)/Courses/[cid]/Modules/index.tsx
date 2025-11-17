@@ -1,14 +1,11 @@
-// app/(Kambaz)/Courses/[cid]/Modules/index.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
 import {
-  addModule,
   editModule,
   updateModule as updateModuleReducer,
-  deleteModule as deleteModuleReducer,
   setModules,
 } from "./reducer";
 import * as coursesClient from "../../client";
@@ -16,48 +13,74 @@ import { RootState } from "@/app/(Kambaz)/store";
 import ModulesControls from "../Modules/ModulesControls";
 import ModuleControlButtons from "../Modules/ModuleControlButtons";
 
+/* --------------------------
+   Types
+-------------------------- */
+export interface Module {
+  _id: string;
+  name: string;
+  course: string;
+  editing?: boolean;
+}
+
 export default function Modules() {
   const params = useParams();
-  const cid = params?.cid as string;
+  const cid = params?.cid as string | undefined;
   const dispatch = useDispatch();
 
   const [moduleName, setModuleName] = useState("");
 
   const { modules } = useSelector((state: RootState) => state.modulesReducer);
 
-  if (!cid) return <div>Loading course...</div>;
+  /* --------------------------
+     Load modules (with useCallback)
+  -------------------------- */
+  const loadModules = useCallback(async () => {
+    if (!cid) return;
+    const list: Module[] = await coursesClient.findModulesForCourse(cid);
+    dispatch(setModules(list));
+  }, [cid, dispatch]);
 
-  // CREATE
+  useEffect(() => {
+    loadModules();
+  }, [loadModules]);
+
+  /* Loading state */
+  if (!cid) {
+    return <div>Loading course...</div>;
+  }
+
+  /* --------------------------
+     CREATE
+  -------------------------- */
   const onCreateModuleForCourse = async () => {
     const newModule = { name: moduleName, course: cid };
-    const module = await coursesClient.createModuleForCourse(cid, newModule);
-    dispatch(setModules([...modules, module]));
+    const createdModule: Module = await coursesClient.createModuleForCourse(
+      cid,
+      newModule
+    );
+    dispatch(setModules([...modules, createdModule]));
     setModuleName("");
   };
 
-  // DELETE
+  /* --------------------------
+     DELETE
+  -------------------------- */
   const onRemoveModule = async (moduleId: string) => {
     await coursesClient.deleteModule(moduleId);
-    dispatch(setModules(modules.filter((m) => m._id !== moduleId)));
+    dispatch(setModules(modules.filter((m: Module) => m._id !== moduleId)));
   };
 
-  // ⭐ UPDATE MODULE
-  const onUpdateModule = async (module: any) => {
+  /* --------------------------
+     UPDATE
+  -------------------------- */
+  const onUpdateModule = async (module: Module) => {
     await coursesClient.updateModule(module);
-    const newModules = modules.map((m) =>
+    const newModules = modules.map((m: Module) =>
       m._id === module._id ? module : m
     );
     dispatch(setModules(newModules));
   };
-
-  const loadModules = async () => {
-    const list = await coursesClient.findModulesForCourse(cid);
-    dispatch(setModules(list));
-  };
-
-  useEffect(() => {
-    loadModules();
-  }, [cid]);
 
   return (
     <div>
@@ -68,15 +91,15 @@ export default function Modules() {
       />
 
       <ul className="list-group mt-3">
-        {modules.map((module: any) => (
+        {modules.map((module: Module) => (
           <li
             key={module._id}
             className="list-group-item d-flex justify-content-between align-items-center"
           >
-            {/* ⭐ VIEW MODE */}
+            {/* VIEW MODE */}
             {!module.editing && module.name}
 
-            {/* ⭐ EDIT MODE */}
+            {/* EDIT MODE */}
             {module.editing && (
               <input
                 className="form-control w-50 d-inline-block"

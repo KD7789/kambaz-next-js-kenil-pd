@@ -1,48 +1,82 @@
 "use client";
+
 import React, { useState, useEffect } from "react";
 import { ListGroup, ListGroupItem, FormControl } from "react-bootstrap";
 import { FaTrash, FaPlusCircle } from "react-icons/fa";
 import { TiDelete } from "react-icons/ti";
 import { FaPencil } from "react-icons/fa6";
 import * as client from "./client";
+import { AxiosError } from "axios";
+
+/* --------------------------------------
+   Types
+-------------------------------------- */
+export interface Todo {
+  id: string | number;
+  title: string;
+  completed: boolean;
+  editing?: boolean;
+}
 
 export default function WorkingWithArraysAsynchronously() {
-  const [todos, setTodos] = useState<any[]>([]);
+  const [todos, setTodos] = useState<Todo[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  /* --------------------------------------
+     FETCH
+  -------------------------------------- */
   const fetchTodos = async () => {
-    const todos = await client.fetchTodos();
+    const todos: Todo[] = await client.fetchTodos();
     setTodos(todos);
   };
 
-  const removeTodo = async (todo: any) => {
-    const updatedTodos = await client.removeTodo(todo);
+  /* --------------------------------------
+     REMOVE
+  -------------------------------------- */
+  const removeTodo = async (todo: Todo) => {
+    const updatedTodos: Todo[] = await client.removeTodo(todo);
     setTodos(updatedTodos);
   };
 
-  const deleteTodo = async (todo: any) => {
+  /* --------------------------------------
+     DELETE
+  -------------------------------------- */
+  const deleteTodo = async (todo: Todo) => {
     try {
       await client.deleteTodo(todo);
       setTodos(todos.filter((t) => t.id !== todo.id));
-    } catch (error: any) {
-      setErrorMessage(error.response.data.message);
+    } catch (err: unknown) {
+      if (err instanceof AxiosError) {
+        setErrorMessage(err.response?.data?.message || "Error deleting todo");
+      } else {
+        setErrorMessage("Error deleting todo");
+      }
     }
   };
 
+  /* --------------------------------------
+     CREATE
+  -------------------------------------- */
   const createNewTodo = async () => {
-    const updatedTodos = await client.createNewTodo(); 
+    const updatedTodos: Todo[] = await client.createNewTodo();
     setTodos(updatedTodos);
   };
 
+  /* --------------------------------------
+     POST NEW
+  -------------------------------------- */
   const postNewTodo = async () => {
-    const newTodo = await client.postNewTodo({
+    const newTodo: Todo = await client.postNewTodo({
       title: "New Posted Todo",
       completed: false,
     });
     setTodos([...todos, newTodo]);
   };
 
-  const editTodo = (todo: any) => {
+  /* --------------------------------------
+     EDIT
+  -------------------------------------- */
+  const editTodo = (todo: Todo) => {
     setTodos(
       todos.map((t) =>
         t.id === todo.id ? { ...todo, editing: true } : t
@@ -50,7 +84,10 @@ export default function WorkingWithArraysAsynchronously() {
     );
   };
 
-  const updateTodo = async (todo: any) => {
+  /* --------------------------------------
+     UPDATE
+  -------------------------------------- */
+  const updateTodo = async (todo: Todo) => {
     try {
       await client.updateTodo(todo);
 
@@ -59,11 +96,18 @@ export default function WorkingWithArraysAsynchronously() {
           t.id === todo.id ? todo : t
         )
       );
-    } catch (error: any) {
-      setErrorMessage(error.response.data.message);
+    } catch (err: unknown) {
+      if (err instanceof AxiosError) {
+        setErrorMessage(err.response?.data?.message || "Error updating todo");
+      } else {
+        setErrorMessage("Error updating todo");
+      }
     }
   };
 
+  /* --------------------------------------
+     LOAD
+  -------------------------------------- */
   useEffect(() => {
     fetchTodos();
   }, []);
@@ -73,10 +117,7 @@ export default function WorkingWithArraysAsynchronously() {
       <h3>Working with Arrays Asynchronously</h3>
 
       {errorMessage && (
-        <div
-          id="wd-todo-error-message"
-          className="alert alert-danger mb-2 mt-2"
-        >
+        <div id="wd-todo-error-message" className="alert alert-danger mb-2 mt-2">
           {errorMessage}
         </div>
       )}
@@ -88,7 +129,6 @@ export default function WorkingWithArraysAsynchronously() {
           className="text-success float-end fs-3"
           id="wd-create-todo"
         />
-
         <FaPlusCircle
           onClick={postNewTodo}
           className="text-primary float-end fs-3 me-3"
@@ -97,9 +137,8 @@ export default function WorkingWithArraysAsynchronously() {
       </h4>
 
       <ListGroup>
-        {todos.map((todo) => (
+        {todos.map((todo: Todo) => (
           <ListGroupItem key={todo.id} className="clearfix">
-
             <FaTrash
               onClick={() => removeTodo(todo)}
               className="text-danger float-end mt-1 ms-2"

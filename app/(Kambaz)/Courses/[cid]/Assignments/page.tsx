@@ -75,18 +75,24 @@ export default function Assignments() {
           id="wd-search-assignment"
         />
         <div>
-          <Button
-            variant="danger"
-            size="lg"
-            id="wd-add-assignment"
-            onClick={() => router.push(`/Courses/${cid}/Assignments/new`)}
-          >
-            <FaPlus className="me-2" /> Assignment
-          </Button>
+        <Button
+  variant="danger"
+  size="lg"
+  id="wd-add-assignment"
+  onClick={() => router.push(`/Courses/${cid}/Assignments/new`)}
+>
+  <FaPlus className="me-2" /> Assignment
+</Button>
 
-          <Button variant="secondary" size="lg" id="wd-add-assignment-group">
-            <FaPlus className="me-2" /> Group
-          </Button>
+<Button
+  variant="secondary"
+  size="lg"
+  id="wd-add-assignment-group"
+  className="ms-3"     // <-- added margin-left spacing
+>
+  <FaPlus className="me-2" /> Group
+</Button>
+
         </div>
       </div>
 

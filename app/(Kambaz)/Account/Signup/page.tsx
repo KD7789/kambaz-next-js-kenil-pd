@@ -6,10 +6,14 @@ import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { setCurrentUser } from "../reducer";
 import * as client from "../client";
+import { AxiosError } from "axios";
 
 export default function Signup() {
   const [user, setUser] = useState({ username: "", password: "" });
-  const [error, setError] = useState("");
+
+  // We don't use the error directly
+  const [, setError] = useState("");
+
   const router = useRouter();
   const dispatch = useDispatch();
 
@@ -21,13 +25,16 @@ export default function Signup() {
   const handleSignup = async () => {
     try {
       const newUser = await client.signup(user);
-
-      // Success
       dispatch(setCurrentUser(newUser));
       router.push("/Account/Profile");
-    } catch (error: any) {
-      const message =
-        error.response?.data?.message || "Signup failed!";
+    } catch (err: unknown) {
+      let message = "Signup failed!";
+
+      // Safe Axios error narrowing
+      if (err instanceof AxiosError) {
+        message = err.response?.data?.message || message;
+      }
+
       setError(message);
       alert(message);
     }
