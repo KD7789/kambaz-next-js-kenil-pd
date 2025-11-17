@@ -1,22 +1,32 @@
 "use client";
+
 import { useParams, useRouter } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../../store";
-import { deleteAssignment } from "./reducer";
-import { ListGroup, ListGroupItem, Button } from "react-bootstrap";
+import {
+  setAssignments,
+  deleteAssignmentInStore,
+} from "./reducer";
+import * as client from "../../client";
+import {
+  ListGroup,
+  ListGroupItem,
+  Button,
+} from "react-bootstrap";
 import { BsGripVertical } from "react-icons/bs";
 import { FaPlus, FaEllipsisV, FaTrash } from "react-icons/fa";
 import Link from "next/link";
 import LessonControlButtons from "../Modules/LessonControlButtons";
+import React from "react";
 
 interface Assignment {
   _id: string;
   title: string;
   course: string;
   points: number;
-  group: "ASSIGNMENTS" | "QUIZZES" | "EXAMS" | "PROJECTS";
-  gradeDisplay: "Percentage" | "Points" | "Complete/Incomplete";
-  submissionType: "Online" | "On Paper" | "External Tool";
+  group: string;
+  gradeDisplay: string;
+  submissionType: string;
   onlineEntryOptions: string[];
   assignTo: string;
   dueDate: string;
@@ -29,18 +39,29 @@ export default function Assignments() {
   const { cid } = useParams<{ cid: string }>();
   const router = useRouter();
   const dispatch = useDispatch();
+
   const { assignments } = useSelector(
     (state: RootState) => state.assignmentsReducer
   );
 
-  const courseAssignments: Assignment[] = assignments.filter(
-    (a: Assignment) => a.course === cid
-  );
+  /** Load from server */
+  const loadAssignments = async () => {
+    const list = await client.findAssignmentsForCourse(cid!);
+    dispatch(setAssignments(list));
+  };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this assignment?")) {
-      dispatch(deleteAssignment(id));
-    }
+  React.useEffect(() => {
+    loadAssignments();
+  }, [cid]);
+
+  const courseAssignments = assignments.filter((a) => a.course === cid);
+
+  /** Delete assignment */
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this assignment?")) return;
+
+    await client.deleteAssignment(id);
+    dispatch(deleteAssignmentInStore(id));
   };
 
   return (
@@ -57,21 +78,14 @@ export default function Assignments() {
           <Button
             variant="danger"
             size="lg"
-            className="me-1 float-end"
             id="wd-add-assignment"
             onClick={() => router.push(`/Courses/${cid}/Assignments/new`)}
           >
-            <FaPlus className="position-relative me-2" style={{ bottom: "1px" }} />
-            Assignment
+            <FaPlus className="me-2" /> Assignment
           </Button>
-          <Button
-            variant="secondary"
-            size="lg"
-            className="me-1 float-end"
-            id="wd-add-assignment-group"
-          >
-            <FaPlus className="position-relative me-2" style={{ bottom: "1px" }} />
-            Group
+
+          <Button variant="secondary" size="lg" id="wd-add-assignment-group">
+            <FaPlus className="me-2" /> Group
           </Button>
         </div>
       </div>
@@ -103,19 +117,20 @@ export default function Assignments() {
             </div>
           </div>
 
-          {/* ✅ Assignments List */}
+          {/* ASSIGNMENT LIST */}
           <ListGroup className="wd-assignments rounded-0">
             {courseAssignments.map((assignment: Assignment) => (
               <ListGroupItem
                 key={assignment._id}
                 className="wd-assignment p-3 ps-2 d-flex justify-content-between align-items-center"
               >
-                {/* LEFT: Assignment Info */}
+                {/* LEFT INFO */}
                 <div>
                   <BsGripVertical className="me-2 fs-3" />
+
                   <Link
                     href={`/Courses/${cid}/Assignments/${assignment._id}`}
-                    className="wd-assignment-link fw-bold text-black text-decoration-none"
+                    className="fw-bold text-black text-decoration-none"
                   >
                     {assignment.title}
                   </Link>
@@ -127,8 +142,7 @@ export default function Assignments() {
                       <>
                         {" | "}
                         <span className="fw-bold">Not available until</span>{" "}
-                        {new Date(assignment.availableFrom).toLocaleDateString()}
-                        <span> at 12:00 AM</span>
+                        {new Date(assignment.availableFrom).toLocaleDateString()} at 12:00 AM
                       </>
                     )}
 
@@ -136,8 +150,7 @@ export default function Assignments() {
                       <>
                         {" | "}
                         <span className="fw-bold">Due</span>{" "}
-                        {new Date(assignment.dueDate).toLocaleDateString()}
-                        <span> at 11:59 PM</span>
+                        {new Date(assignment.dueDate).toLocaleDateString()} at 11:59 PM
                       </>
                     )}
 
@@ -145,9 +158,10 @@ export default function Assignments() {
                   </p>
                 </div>
 
-                {/* RIGHT: Control Buttons (✅ moved LessonControlButtons here) */}
+                {/* RIGHT BUTTONS */}
                 <div className="d-flex align-items-center gap-2">
                   <LessonControlButtons />
+
                   <Button
                     variant="outline-danger"
                     size="sm"

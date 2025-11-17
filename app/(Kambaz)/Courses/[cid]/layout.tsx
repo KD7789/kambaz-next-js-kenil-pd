@@ -2,11 +2,12 @@
 
 import { ReactNode, useState, useEffect } from "react";
 import CourseNavigation from "./Navigation";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useParams, useRouter } from "next/navigation";
 import { RootState } from "../../store";
 import { FaAlignJustify } from "react-icons/fa";
-import Breadcrumb from "../[cid]/Breadcrumb"; // ✅ Import
+import Breadcrumb from "../[cid]/Breadcrumb";
+import * as coursesClient from "../client";
 
 interface Course {
   _id: string;
@@ -23,6 +24,7 @@ interface Course {
 
 export default function CoursesLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const dispatch = useDispatch();
   const { cid } = useParams<{ cid: string }>();
 
   const { courses } = useSelector((state: RootState) => state.coursesReducer);
@@ -31,16 +33,28 @@ export default function CoursesLayout({ children }: { children: ReactNode }) {
 
   const [showNav, setShowNav] = useState(true);
 
-  const course: Course | undefined = courses.find((c: Course) => c._id === cid);
+  const course = courses.find((c: Course) => c._id === cid);
 
+  // 🔥 Load courses on refresh so layout can validate the course
   useEffect(() => {
-    if (!cid || !course) {
-      router.push("/Dashboard");
-      return;
-    }
+    const loadCourses = async () => {
+      if (courses.length === 0) {
+        const allCourses = await coursesClient.fetchAllCourses();
+        dispatch({ type: "courses/setCourses", payload: allCourses });
+      }
+    };
+    loadCourses();
+  }, [courses.length, dispatch]);
 
-    if (!currentUser) {
-      alert("Please sign in to access courses.");
+  // 🔥 Load user? (optional, because AccountReducer may already handle it)
+
+  const loading = courses.length === 0 || !currentUser;
+
+  // 🔥 Redirect logic AFTER data loads
+  useEffect(() => {
+    if (loading) return; // WAIT for Redux to hydrate
+
+    if (!cid || !course) {
       router.push("/Dashboard");
       return;
     }
@@ -58,11 +72,15 @@ export default function CoursesLayout({ children }: { children: ReactNode }) {
       alert("You are not enrolled in this course.");
       router.push("/Dashboard");
     }
-  }, [cid, currentUser, enrollments, course, router]);
+  }, [cid, course, currentUser, enrollments, loading, router]);
+
+  // 🔥 Show loading until we know the course exists
+  if (loading) {
+    return <div>Loading course...</div>;
+  }
 
   return (
     <div id="wd-courses" style={{ padding: "20px" }}>
-      {/* ✅ Combined Title + Breadcrumb in one clean line */}
       <div className="d-flex align-items-center mb-2">
         <FaAlignJustify
           className="me-3 fs-4"

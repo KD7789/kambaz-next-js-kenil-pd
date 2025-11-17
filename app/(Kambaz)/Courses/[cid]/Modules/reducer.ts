@@ -1,5 +1,4 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { modules } from "../../../Database";
 import { v4 as uuidv4 } from "uuid";
 
 export interface Lesson {
@@ -14,7 +13,7 @@ export interface Module {
   name: string;
   course: string;
   lessons: Lesson[];
-  editing?: boolean; // 👈 optional flag for inline editing
+  editing?: boolean;
 }
 
 interface ModulesState {
@@ -22,46 +21,65 @@ interface ModulesState {
 }
 
 const initialState: ModulesState = {
-  modules: modules as Module[],
+  modules: [],
 };
 
 const modulesSlice = createSlice({
   name: "modules",
   initialState,
   reducers: {
-    // ✅ Add new module with editing flag
+    // ⭐ Replace whole module list (server data)
+    setModules: (state, action) => {
+      state.modules = action.payload;
+    },
+
+    // ⭐ Add a new module locally (rarely used now)
     addModule: (state, { payload }) => {
       const newModule: Module = {
         _id: uuidv4(),
         lessons: [],
         name: payload.name,
         course: payload.course,
-        editing: false, // 👈 ensure TypeScript knows this exists
+        editing: false,
       };
       state.modules.push(newModule);
     },
 
-    // ✅ Delete module by ID
+    // ⭐ Remove a module by ID
     deleteModule: (state, { payload: moduleId }) => {
       state.modules = state.modules.filter((m) => m._id !== moduleId);
     },
 
-    // ✅ Update module details
+    // ⭐ Update module *locally while typing* (client-side only)
     updateModule: (state, { payload }) => {
       state.modules = state.modules.map((m) =>
-        m._id === payload._id ? payload : m
+        m._id === payload._id ? { ...m, ...payload } : m
       );
     },
 
-    // ✅ Toggle editing mode
+    // ⭐ Mark module as editing mode
     editModule: (state, { payload: moduleId }) => {
       state.modules = state.modules.map((m) =>
         m._id === moduleId ? { ...m, editing: true } : m
       );
     },
+
+    // ⭐ Save module (stop editing after server update)
+    saveModule: (state, { payload }) => {
+      state.modules = state.modules.map((m) =>
+        m._id === payload._id ? { ...payload, editing: false } : m
+      );
+    },
   },
 });
 
-export const { addModule, deleteModule, updateModule, editModule } =
-  modulesSlice.actions;
+export const {
+  addModule,
+  deleteModule,
+  updateModule,
+  editModule,
+  saveModule,
+  setModules,
+} = modulesSlice.actions;
+
 export default modulesSlice.reducer;

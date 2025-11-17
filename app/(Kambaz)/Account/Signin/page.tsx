@@ -1,55 +1,35 @@
 "use client";
 import Link from "next/link";
-import { redirect } from "next/dist/client/components/navigation";
-import { setCurrentUser } from "../reducer";
+import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
+import { setCurrentUser } from "../reducer";
 import { useState } from "react";
-import * as db from "../../Database";
+import * as client from "../client";
 import { FormControl, Button } from "react-bootstrap";
 
-interface Credentials {
-  username: string;
-  password: string;
-}
-
-interface User {
-  _id: string;
-  username: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  dob: string;
-  role: "USER" | "ADMIN" | "FACULTY" | "STUDENT" | "TA";
-  loginId?: string;
-  section?: string;
-  lastActivity?: string;
-  totalActivity?: string;
-}
-
 export default function Signin() {
-  const [credentials, setCredentials] = useState<Credentials>({
+  const [credentials, setCredentials] = useState({
     username: "",
     password: "",
   });
 
   const dispatch = useDispatch();
+  const router = useRouter();
 
-  const signin = () => {
-    const users = db.users as User[];
-    const user = users.find(
-      (u) =>
-        u.username === credentials.username &&
-        u.password === credentials.password
-    );
+  const signin = async () => {
+    try {
+      const user = await client.signin(credentials);
 
-    if (!user) {
+      if (!user || !user._id) {
+        alert("Invalid username or password");
+        return;
+      }
+
+      dispatch(setCurrentUser(user));
+      router.push("/Dashboard");   
+    } catch (e) {
       alert("Invalid username or password");
-      return;
     }
-
-    dispatch(setCurrentUser(user));
-    redirect("/Dashboard");
   };
 
   return (
@@ -58,7 +38,7 @@ export default function Signin() {
       style={{
         marginLeft: "30px",
         marginRight: "80px",
-        marginTop: "10px", // ⬆️ moved slightly higher for alignment
+        marginTop: "10px",
         maxWidth: "400px",
         border: "1px solid #ccc",
         borderRadius: "8px",

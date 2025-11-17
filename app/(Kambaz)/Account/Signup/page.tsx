@@ -2,71 +2,35 @@
 import Link from "next/link";
 import { FormControl, Button } from "react-bootstrap";
 import { useState, ChangeEvent } from "react";
-import { redirect } from "next/dist/client/components/navigation";
-import * as db from "../../Database";
-
-interface User {
-  _id: string;
-  username: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  dob: string;
-  role: "USER" | "ADMIN" | "FACULTY" | "STUDENT" | "TA";
-  loginId: string;
-  section: string;
-  lastActivity: string;
-  totalActivity: string;
-}
-
-interface UserInput {
-  username: string;
-  password: string;
-}
+import { useRouter } from "next/navigation";
+import { useDispatch } from "react-redux";
+import { setCurrentUser } from "../reducer";
+import * as client from "../client";
 
 export default function Signup() {
-  const [user, setUser] = useState<UserInput>({
-    username: "",
-    password: "",
-  });
+  const [user, setUser] = useState({ username: "", password: "" });
+  const [error, setError] = useState("");
+  const router = useRouter();
+  const dispatch = useDispatch();
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setUser((prev) => ({ ...prev, [id.replace("wd-", "")]: value }));
   };
 
-  const handleSignup = () => {
-    const users = db.users as User[];
+  const handleSignup = async () => {
+    try {
+      const newUser = await client.signup(user);
 
-    if (users.some((u) => u.username === user.username)) {
-      alert("Username already exists! Try a different one.");
-      return;
+      // Success
+      dispatch(setCurrentUser(newUser));
+      router.push("/Account/Profile");
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message || "Signup failed!";
+      setError(message);
+      alert(message);
     }
-
-    const newUser: User = {
-      _id: Date.now().toString(),
-      username: user.username,
-      password: user.password,
-      firstName: "",
-      lastName: "",
-      email: "",
-      dob: "",
-      role: "USER",
-      loginId: "00" + Math.floor(100000000 + Math.random() * 900000000) + "S",
-      section: "S101",
-      lastActivity: new Date().toISOString().split("T")[0],
-      totalActivity: "00:00:00",
-    };
-
-    users.push(newUser);
-
-    if (typeof window !== "undefined") {
-      localStorage.setItem("users", JSON.stringify(users));
-    }
-
-    alert("Signup successful!");
-    redirect("/Account/Signin");
   };
 
   return (
@@ -75,7 +39,7 @@ export default function Signup() {
       style={{
         marginLeft: "30px",
         marginRight: "80px",
-        marginTop: "10px", // ⬆️ slightly more up
+        marginTop: "10px",
         maxWidth: "400px",
         border: "1px solid #ccc",
         borderRadius: "8px",
@@ -128,119 +92,3 @@ export default function Signup() {
     </div>
   );
 }
-
-
-
-
-/* "use client";
-import Link from "next/link";
-import { FormControl, Button } from "react-bootstrap";
-import { useState, ChangeEvent } from "react";
-import { redirect } from "next/dist/client/components/navigation";
-import * as db from "../../Database";
-
-// ✅ Define User and UserInput types for safe typing
-interface User {
-  _id: string;
-  username: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  dob: string;
-  role: "USER" | "ADMIN" | "FACULTY" | "STUDENT" | "TA";
-  loginId: string;
-  section: string;
-  lastActivity: string;
-  totalActivity: string;
-}
-
-interface UserInput {
-  username: string;
-  password: string;
-}
-
-export default function Signup() {
-  // ✅ Use proper type instead of `any`
-  const [user, setUser] = useState<UserInput>({
-    username: "",
-    password: "",
-  });
-
-  // ✅ Event typing
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    setUser((prev) => ({ ...prev, [id.replace("wd-", "")]: value }));
-  };
-
-  const handleSignup = () => {
-    const users = db.users as User[];
-
-    // ✅ Prevent duplicate usernames with typed user
-    if (users.some((u) => u.username === user.username)) {
-      alert("Username already exists! Try a different one.");
-      return;
-    }
-
-    // ✅ Create new user safely
-    const newUser: User = {
-      _id: Date.now().toString(),
-      username: user.username,
-      password: user.password,
-      firstName: "",
-      lastName: "",
-      email: "",
-      dob: "",
-      role: "USER",
-      loginId: "00" + Math.floor(100000000 + Math.random() * 900000000) + "S",
-      section: "S101",
-      lastActivity: new Date().toISOString().split("T")[0],
-      totalActivity: "00:00:00",
-    };
-
-    users.push(newUser);
-
-    // ✅ Save to localStorage for persistence
-    if (typeof window !== "undefined") {
-      localStorage.setItem("users", JSON.stringify(users));
-    }
-
-    alert("Signup successful!");
-    redirect("/Account/Signin");
-  };
-
-  return (
-    <div id="wd-signup-screen" style={{ marginLeft: "30px" }}>
-      <h3>Sign up</h3>
-
-      <FormControl
-        id="wd-username"
-        placeholder="username"
-        className="mb-2"
-        value={user.username}
-        onChange={handleChange}
-      />
-      <FormControl
-        id="wd-password"
-        placeholder="password"
-        type="password"
-        className="mb-2"
-        value={user.password}
-        onChange={handleChange}
-      />
-
-      <Button
-        id="wd-signup-btn"
-        className="btn btn-primary w-100 mb-2"
-        onClick={handleSignup}
-      >
-        Sign up
-      </Button>
-
-      <Link id="wd-signin-link" href="/Account/Signin">
-        Sign in
-      </Link>
-    </div>
-  );
-}
- */

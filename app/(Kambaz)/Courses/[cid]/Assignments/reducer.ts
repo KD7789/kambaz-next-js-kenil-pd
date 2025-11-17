@@ -1,8 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { assignments } from "../../../Database";
-import { v4 as uuidv4 } from "uuid";
 
-// ✅ Define Assignment type consistent with your JSON and components
 export interface Assignment {
   _id: string;
   title: string;
@@ -17,58 +14,69 @@ export interface Assignment {
   dueDate: string;
   availableFrom: string;
   availableUntil: string;
+  editing?: boolean;
 }
 
-// ✅ Define slice state type
 interface AssignmentsState {
   assignments: Assignment[];
 }
 
 const initialState: AssignmentsState = {
-  assignments: assignments as Assignment[],
+  assignments: [], // server fills this
 };
 
 const assignmentsSlice = createSlice({
   name: "assignments",
   initialState,
   reducers: {
-    addAssignment: (state, { payload }: PayloadAction<Partial<Assignment>>) => {
-      const assignment = payload;
-      const newAssignment: Assignment = {
-        _id: uuidv4(),
-        title: assignment.title || "New Assignment",
-        description: assignment.description || "",
-        course: assignment.course || "",
-        points: assignment.points ?? 100,
-        group: assignment.group ?? "ASSIGNMENTS",
-        gradeDisplay: assignment.gradeDisplay ?? "Percentage",
-        submissionType: assignment.submissionType ?? "Online",
-        onlineEntryOptions: assignment.onlineEntryOptions ?? ["Text Entry"],
-        assignTo: assignment.assignTo ?? "Everyone",
-        dueDate: assignment.dueDate ?? new Date().toISOString(),
-        availableFrom: assignment.availableFrom ?? new Date().toISOString(),
-        availableUntil: assignment.availableUntil ?? new Date().toISOString(),
-      };
-      state.assignments.push(newAssignment);
+    // Load all assignments for a course
+    setAssignments: (state, { payload }: PayloadAction<Assignment[]>) => {
+      state.assignments = payload;
     },
 
-    deleteAssignment: (state, { payload }: PayloadAction<string>) => {
-      // ✅ Type-safe filter
+    // Add new assignment returned from server
+    addAssignmentInStore: (
+      state,
+      { payload }: PayloadAction<Assignment>
+    ) => {
+      state.assignments.push(payload);
+    },
+
+    // Remove from Redux after server deletion
+    deleteAssignmentInStore: (
+      state,
+      { payload }: PayloadAction<string>
+    ) => {
       state.assignments = state.assignments.filter(
-        (a: Assignment) => a._id !== payload
+        (a) => a._id !== payload
       );
     },
 
-    updateAssignment: (state, { payload }: PayloadAction<Assignment>) => {
-      // ✅ Type-safe map
-      state.assignments = state.assignments.map((a: Assignment) =>
-        a._id === payload._id ? payload : a
+    // Update in Redux after server PUT
+    updateAssignmentInStore: (
+      state,
+      { payload }: PayloadAction<Assignment>
+    ) => {
+      state.assignments = state.assignments.map((a) =>
+        a._id === payload._id ? { ...payload, editing: false } : a
+      );
+    },
+
+    // Toggle editing state locally
+    editAssignment: (state, { payload }: PayloadAction<string>) => {
+      state.assignments = state.assignments.map((a) =>
+        a._id === payload ? { ...a, editing: true } : a
       );
     },
   },
 });
 
-export const { addAssignment, deleteAssignment, updateAssignment } =
-  assignmentsSlice.actions;
+export const {
+  setAssignments,
+  addAssignmentInStore,
+  deleteAssignmentInStore,
+  updateAssignmentInStore,
+  editAssignment,
+} = assignmentsSlice.actions;
 
 export default assignmentsSlice.reducer;

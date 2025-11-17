@@ -1,47 +1,51 @@
 "use client";
+
 import { useParams, useRouter } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../../../store";
-import { addAssignment, updateAssignment } from "../reducer";
-import { useState, useEffect, ChangeEvent } from "react";
+import {
+  updateAssignmentInStore,
+  setAssignments,
+} from "../reducer";
+
+import * as client from "../../../client";
+
+import { useEffect, useState, ChangeEvent } from "react";
 import { Form, Button, Row, Col } from "react-bootstrap";
 
-// ✅ Define a proper Assignment interface
 interface Assignment {
   _id: string;
   title: string;
   description: string;
+  course: string;
   points: number;
-  group: "ASSIGNMENTS" | "QUIZZES" | "EXAMS" | "PROJECTS";
-  gradeDisplay: "Percentage" | "Points" | "Complete/Incomplete";
-  submissionType: "Online" | "On Paper" | "External Tool";
+  group: string;
+  gradeDisplay: string;
+  submissionType: string;
   onlineEntryOptions: string[];
   assignTo: string;
   dueDate: string;
   availableFrom: string;
   availableUntil: string;
-  course: string;
 }
 
 export default function AssignmentEditor() {
   const { aid, cid } = useParams<{ aid: string; cid: string }>();
   const router = useRouter();
   const dispatch = useDispatch();
+
   const { assignments } = useSelector(
     (state: RootState) => state.assignmentsReducer
   );
 
-  // ✅ Find the assignment safely
-  const existingAssignment: Assignment | undefined = assignments.find(
-    (a: Assignment) => a._id === aid
-  );
+  const existingAssignment = assignments.find((a) => a._id === aid);
 
-  // ✅ Strongly type the local state
   const [assignment, setAssignment] = useState<Assignment>(
     existingAssignment || {
       _id: "",
       title: "",
       description: "",
+      course: cid!,
       points: 100,
       group: "ASSIGNMENTS",
       gradeDisplay: "Percentage",
@@ -51,7 +55,6 @@ export default function AssignmentEditor() {
       dueDate: "",
       availableFrom: "",
       availableUntil: "",
-      course: cid,
     }
   );
 
@@ -59,25 +62,29 @@ export default function AssignmentEditor() {
     if (existingAssignment) setAssignment(existingAssignment);
   }, [existingAssignment]);
 
-  // ✅ Typed change handler
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { id, value } = e.target;
-    setAssignment((prev) => ({ ...prev, [id.replace("wd-", "")]: value }));
+    setAssignment((prev) => ({
+      ...prev,
+      [id.replace("wd-", "")]: value,
+    }));
   };
 
-  // ✅ Save handler
-  const handleSave = () => {
+  /** SAVE: Create or Update */
+  const handleSave = async () => {
     if (existingAssignment) {
-      dispatch(updateAssignment(assignment));
+      const updated = await client.updateAssignment(assignment);
+      dispatch(updateAssignmentInStore(updated));
     } else {
-      dispatch(addAssignment({ ...assignment, course: cid }));
+      const created = await client.createAssignmentForCourse(cid!, assignment);
+      dispatch(setAssignments([...assignments, created]));
     }
+
     router.push(`/Courses/${cid}/Assignments`);
   };
 
-  // ✅ Cancel handler
   const handleCancel = () => {
     router.push(`/Courses/${cid}/Assignments`);
   };
@@ -85,7 +92,7 @@ export default function AssignmentEditor() {
   return (
     <div id="wd-assignments-editor" className="p-4">
       <Form>
-        {/* Assignment Name */}
+        {/* Name */}
         <Form.Group className="mb-4" controlId="wd-title">
           <Form.Label className="fw-semibold">Assignment Name</Form.Label>
           <Form.Control
@@ -109,10 +116,7 @@ export default function AssignmentEditor() {
         {/* Points */}
         <Row className="mb-4">
           <Col md={3}>
-            <Form.Group
-              controlId="wd-points"
-              className="d-flex align-items-center"
-            >
+            <Form.Group controlId="wd-points" className="d-flex align-items-center">
               <Form.Label className="fw-semibold mb-0 me-2">Points</Form.Label>
               <Form.Control
                 type="number"
@@ -127,10 +131,7 @@ export default function AssignmentEditor() {
         {/* Group */}
         <Row className="mb-4">
           <Col md={4}>
-            <Form.Group
-              controlId="wd-group"
-              className="d-flex align-items-center"
-            >
+            <Form.Group controlId="wd-group" className="d-flex align-items-center">
               <Form.Label className="fw-semibold mb-0 me-2">
                 Assignment Group
               </Form.Label>
@@ -148,13 +149,10 @@ export default function AssignmentEditor() {
           </Col>
         </Row>
 
-        {/* Display Grade As */}
+        {/* Grade display */}
         <Row className="mb-4">
           <Col md={4}>
-            <Form.Group
-              controlId="wd-gradeDisplay"
-              className="d-flex align-items-center"
-            >
+            <Form.Group controlId="wd-gradeDisplay" className="d-flex align-items-center">
               <Form.Label className="fw-semibold mb-0 me-2">
                 Display Grade as
               </Form.Label>
@@ -175,9 +173,7 @@ export default function AssignmentEditor() {
 
         {/* Submission Type */}
         <div className="d-flex align-items-start mb-4">
-          <Form.Label className="fw-semibold mb-0 me-2">
-            Submission Type
-          </Form.Label>
+          <Form.Label className="fw-semibold mb-0 me-2">Submission Type</Form.Label>
           <div className="border p-3 rounded mb-4">
             <Form.Group
               controlId="wd-submissionType"
@@ -195,14 +191,9 @@ export default function AssignmentEditor() {
             </Form.Group>
 
             <Form.Group controlId="wd-onlineEntryOptions">
-              <Form.Label
-                className="fw-semibold mb-2"
-                style={{ minWidth: "140px", display: "inline-block" }}
-              >
-                Online Entry Options
-              </Form.Label>
+              <Form.Label className="fw-semibold mb-2">Online Entry Options</Form.Label>
               <div className="ms-3">
-                <Form.Check type="checkbox" label="Text Entry" defaultChecked />
+                <Form.Check type="checkbox" label="Text Entry" />
                 <Form.Check type="checkbox" label="Website URL" />
                 <Form.Check type="checkbox" label="Media Recordings" />
                 <Form.Check type="checkbox" label="Student Annotation" />
@@ -225,7 +216,7 @@ export default function AssignmentEditor() {
               />
             </Form.Group>
 
-            <Row className="mb-0">
+            <Row>
               <Form.Group controlId="wd-dueDate">
                 <Form.Label className="fw-semibold">Due</Form.Label>
                 <Form.Control
@@ -244,7 +235,6 @@ export default function AssignmentEditor() {
                   <Form.Control
                     type="date"
                     value={assignment.availableFrom?.slice(0, 10) || ""}
-                    style={{ width: "130px" }}
                     onChange={handleChange}
                   />
                 </Form.Group>
@@ -259,7 +249,6 @@ export default function AssignmentEditor() {
                   <Form.Control
                     type="date"
                     value={assignment.availableUntil?.slice(0, 10) || ""}
-                    style={{ width: "130px" }}
                     onChange={handleChange}
                   />
                 </Form.Group>
@@ -268,16 +257,11 @@ export default function AssignmentEditor() {
           </div>
         </div>
 
-        {/* Save / Cancel */}
         <div className="text-end mt-4">
-          <Button
-            variant="secondary"
-            className="me-2 px-4"
-            onClick={handleCancel}
-          >
+          <Button variant="secondary" onClick={handleCancel} className="me-2 px-4">
             Cancel
           </Button>
-          <Button variant="danger" className="px-4" onClick={handleSave}>
+          <Button variant="danger" onClick={handleSave} className="px-4">
             Save
           </Button>
         </div>
