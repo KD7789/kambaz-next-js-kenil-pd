@@ -29,15 +29,22 @@ export default function Assignments() {
   const { cid } = useParams<{ cid: string }>();
   const router = useRouter();
   const dispatch = useDispatch();
+
   const { assignments } = useSelector(
     (state: RootState) => state.assignmentsReducer
   );
+
+  // ⭐ Role Access
+  const { currentUser } = useSelector((state: RootState) => state.accountReducer);
+  const editableRoles = ["FACULTY", "TA", "ADMIN"];
+  const canEdit = editableRoles.includes(currentUser?.role ?? "");
 
   const courseAssignments: Assignment[] = assignments.filter(
     (a: Assignment) => a.course === cid
   );
 
   const handleDelete = (id: string) => {
+    if (!canEdit) return;
     if (confirm("Are you sure you want to delete this assignment?")) {
       dispatch(deleteAssignment(id));
     }
@@ -53,27 +60,32 @@ export default function Assignments() {
           className="form-control w-50"
           id="wd-search-assignment"
         />
-        <div>
-          <Button
-            variant="danger"
-            size="lg"
-            className="me-1 float-end"
-            id="wd-add-assignment"
-            onClick={() => router.push(`/Courses/${cid}/Assignments/new`)}
-          >
-            <FaPlus className="position-relative me-2" style={{ bottom: "1px" }} />
-            Assignment
-          </Button>
-          <Button
-            variant="secondary"
-            size="lg"
-            className="me-1 float-end"
-            id="wd-add-assignment-group"
-          >
-            <FaPlus className="position-relative me-2" style={{ bottom: "1px" }} />
-            Group
-          </Button>
-        </div>
+
+        {/* ⭐ Show Add buttons only if allowed */}
+        {canEdit && (
+          <div>
+            <Button
+              variant="danger"
+              size="lg"
+              className="me-1 float-end"
+              id="wd-add-assignment"
+              onClick={() => router.push(`/Courses/${cid}/Assignments/new`)}
+            >
+              <FaPlus className="position-relative me-2" style={{ bottom: "1px" }} />
+              Assignment
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="lg"
+              className="me-1 float-end"
+              id="wd-add-assignment-group"
+            >
+              <FaPlus className="position-relative me-2" style={{ bottom: "1px" }} />
+              Group
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Assignment Groups */}
@@ -96,14 +108,19 @@ export default function Assignments() {
               >
                 40% of Total
               </span>
-              <Button variant="light" className="border me-2">
-                <FaPlus />
-              </Button>
+
+              {/* ⭐ Only faculty/TA/admin can add items inside group */}
+              {canEdit && (
+                <Button variant="light" className="border me-2">
+                  <FaPlus />
+                </Button>
+              )}
+
               <FaEllipsisV className="fs-5 text-secondary" />
             </div>
           </div>
 
-          {/* ✅ Assignments List */}
+          {/* Assignment List */}
           <ListGroup className="wd-assignments rounded-0">
             {courseAssignments.map((assignment: Assignment) => (
               <ListGroupItem
@@ -113,6 +130,8 @@ export default function Assignments() {
                 {/* LEFT: Assignment Info */}
                 <div>
                   <BsGripVertical className="me-2 fs-3" />
+
+                  {/* ⭐ Students can open details, but cannot edit */}
                   <Link
                     href={`/Courses/${cid}/Assignments/${assignment._id}`}
                     className="wd-assignment-link fw-bold text-black text-decoration-none"
@@ -145,17 +164,19 @@ export default function Assignments() {
                   </p>
                 </div>
 
-                {/* RIGHT: Control Buttons (✅ moved LessonControlButtons here) */}
-                <div className="d-flex align-items-center gap-2">
-                  <LessonControlButtons />
-                  <Button
-                    variant="outline-danger"
-                    size="sm"
-                    onClick={() => handleDelete(assignment._id)}
-                  >
-                    <FaTrash />
-                  </Button>
-                </div>
+                {/* ⭐ RIGHT-SIDE CONTROLS — Visible only for faculty/TA/admin */}
+                {canEdit && (
+                  <div className="d-flex align-items-center gap-2">
+                    <LessonControlButtons />
+                    <Button
+                      variant="outline-danger"
+                      size="sm"
+                      onClick={() => handleDelete(assignment._id)}
+                    >
+                      <FaTrash />
+                    </Button>
+                  </div>
+                )}
               </ListGroupItem>
             ))}
           </ListGroup>

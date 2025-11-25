@@ -6,7 +6,7 @@ import { addAssignment, updateAssignment } from "../reducer";
 import { useState, useEffect, ChangeEvent } from "react";
 import { Form, Button, Row, Col } from "react-bootstrap";
 
-// ✅ Define a proper Assignment interface
+// Assignment type
 interface Assignment {
   _id: string;
   title: string;
@@ -27,16 +27,30 @@ export default function AssignmentEditor() {
   const { aid, cid } = useParams<{ aid: string; cid: string }>();
   const router = useRouter();
   const dispatch = useDispatch();
+
+  // ⭐ Get logged-in user
+  const { currentUser } = useSelector((state: RootState) => state.accountReducer);
+
+  // ⭐ Allowed roles
+  const editableRoles = ["FACULTY", "TA", "ADMIN"];
+  const canEdit = editableRoles.includes(currentUser?.role ?? "");
+
+  // ⭐ If user is not allowed → redirect back
+  useEffect(() => {
+    if (!canEdit) {
+      router.push(`/Courses/${cid}/Assignments`);
+    }
+  }, [canEdit, cid, router]);
+
   const { assignments } = useSelector(
     (state: RootState) => state.assignmentsReducer
   );
 
-  // ✅ Find the assignment safely
+  // Find assignment being edited
   const existingAssignment: Assignment | undefined = assignments.find(
     (a: Assignment) => a._id === aid
   );
 
-  // ✅ Strongly type the local state
   const [assignment, setAssignment] = useState<Assignment>(
     existingAssignment || {
       _id: "",
@@ -59,7 +73,7 @@ export default function AssignmentEditor() {
     if (existingAssignment) setAssignment(existingAssignment);
   }, [existingAssignment]);
 
-  // ✅ Typed change handler
+  // Input handler
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -67,8 +81,10 @@ export default function AssignmentEditor() {
     setAssignment((prev) => ({ ...prev, [id.replace("wd-", "")]: value }));
   };
 
-  // ✅ Save handler
+  // Save handler
   const handleSave = () => {
+    if (!canEdit) return;
+
     if (existingAssignment) {
       dispatch(updateAssignment(assignment));
     } else {
@@ -77,7 +93,6 @@ export default function AssignmentEditor() {
     router.push(`/Courses/${cid}/Assignments`);
   };
 
-  // ✅ Cancel handler
   const handleCancel = () => {
     router.push(`/Courses/${cid}/Assignments`);
   };
@@ -92,6 +107,7 @@ export default function AssignmentEditor() {
             type="text"
             value={assignment.title}
             onChange={handleChange}
+            disabled={!canEdit}
           />
         </Form.Group>
 
@@ -103,22 +119,21 @@ export default function AssignmentEditor() {
             rows={8}
             value={assignment.description}
             onChange={handleChange}
+            disabled={!canEdit}
           />
         </Form.Group>
 
         {/* Points */}
         <Row className="mb-4">
           <Col md={3}>
-            <Form.Group
-              controlId="wd-points"
-              className="d-flex align-items-center"
-            >
+            <Form.Group controlId="wd-points" className="d-flex align-items-center">
               <Form.Label className="fw-semibold mb-0 me-2">Points</Form.Label>
               <Form.Control
                 type="number"
                 value={assignment.points}
                 style={{ width: "300px" }}
                 onChange={handleChange}
+                disabled={!canEdit}
               />
             </Form.Group>
           </Col>
@@ -127,17 +142,13 @@ export default function AssignmentEditor() {
         {/* Group */}
         <Row className="mb-4">
           <Col md={4}>
-            <Form.Group
-              controlId="wd-group"
-              className="d-flex align-items-center"
-            >
-              <Form.Label className="fw-semibold mb-0 me-2">
-                Assignment Group
-              </Form.Label>
+            <Form.Group controlId="wd-group" className="d-flex align-items-center">
+              <Form.Label className="fw-semibold mb-0 me-2">Assignment Group</Form.Label>
               <Form.Select
                 value={assignment.group}
                 style={{ width: "300px" }}
                 onChange={handleChange}
+                disabled={!canEdit}
               >
                 <option value="ASSIGNMENTS">ASSIGNMENTS</option>
                 <option value="QUIZZES">QUIZZES</option>
@@ -151,23 +162,17 @@ export default function AssignmentEditor() {
         {/* Display Grade As */}
         <Row className="mb-4">
           <Col md={4}>
-            <Form.Group
-              controlId="wd-gradeDisplay"
-              className="d-flex align-items-center"
-            >
-              <Form.Label className="fw-semibold mb-0 me-2">
-                Display Grade as
-              </Form.Label>
+            <Form.Group controlId="wd-gradeDisplay" className="d-flex align-items-center">
+              <Form.Label className="fw-semibold mb-0 me-2">Display Grade as</Form.Label>
               <Form.Select
                 value={assignment.gradeDisplay}
                 style={{ width: "300px" }}
                 onChange={handleChange}
+                disabled={!canEdit}
               >
                 <option value="Percentage">Percentage</option>
                 <option value="Points">Points</option>
-                <option value="Complete/Incomplete">
-                  Complete/Incomplete
-                </option>
+                <option value="Complete/Incomplete">Complete/Incomplete</option>
               </Form.Select>
             </Form.Group>
           </Col>
@@ -175,39 +180,19 @@ export default function AssignmentEditor() {
 
         {/* Submission Type */}
         <div className="d-flex align-items-start mb-4">
-          <Form.Label className="fw-semibold mb-0 me-2">
-            Submission Type
-          </Form.Label>
+          <Form.Label className="fw-semibold mb-0 me-2">Submission Type</Form.Label>
           <div className="border p-3 rounded mb-4">
-            <Form.Group
-              controlId="wd-submissionType"
-              className="d-flex align-items-center mb-3"
-            >
+            <Form.Group controlId="wd-submissionType" className="d-flex align-items-center mb-3">
               <Form.Select
                 value={assignment.submissionType}
                 style={{ width: "300px" }}
                 onChange={handleChange}
+                disabled={!canEdit}
               >
                 <option value="Online">Online</option>
                 <option value="On Paper">On Paper</option>
                 <option value="External Tool">External Tool</option>
               </Form.Select>
-            </Form.Group>
-
-            <Form.Group controlId="wd-onlineEntryOptions">
-              <Form.Label
-                className="fw-semibold mb-2"
-                style={{ minWidth: "140px", display: "inline-block" }}
-              >
-                Online Entry Options
-              </Form.Label>
-              <div className="ms-3">
-                <Form.Check type="checkbox" label="Text Entry" defaultChecked />
-                <Form.Check type="checkbox" label="Website URL" />
-                <Form.Check type="checkbox" label="Media Recordings" />
-                <Form.Check type="checkbox" label="Student Annotation" />
-                <Form.Check type="checkbox" label="File Uploads" />
-              </div>
             </Form.Group>
           </div>
         </div>
@@ -222,6 +207,7 @@ export default function AssignmentEditor() {
                 type="text"
                 value={assignment.assignTo}
                 onChange={handleChange}
+                disabled={!canEdit}
               />
             </Form.Group>
 
@@ -232,35 +218,32 @@ export default function AssignmentEditor() {
                   type="date"
                   value={assignment.dueDate?.slice(0, 10) || ""}
                   onChange={handleChange}
+                  disabled={!canEdit}
                 />
               </Form.Group>
 
               <Col md={4}>
-                <Form.Group
-                  controlId="wd-availableFrom"
-                  style={{ marginBlockStart: "30px" }}
-                >
+                <Form.Group controlId="wd-availableFrom" style={{ marginBlockStart: "30px" }}>
                   <Form.Label className="fw-semibold">Available from</Form.Label>
                   <Form.Control
                     type="date"
                     value={assignment.availableFrom?.slice(0, 10) || ""}
                     style={{ width: "130px" }}
                     onChange={handleChange}
+                    disabled={!canEdit}
                   />
                 </Form.Group>
               </Col>
 
               <Col md={4}>
-                <Form.Group
-                  controlId="wd-availableUntil"
-                  style={{ marginBlockStart: "30px" }}
-                >
+                <Form.Group controlId="wd-availableUntil" style={{ marginBlockStart: "30px" }}>
                   <Form.Label className="fw-semibold">Until</Form.Label>
                   <Form.Control
                     type="date"
                     value={assignment.availableUntil?.slice(0, 10) || ""}
                     style={{ width: "130px" }}
                     onChange={handleChange}
+                    disabled={!canEdit}
                   />
                 </Form.Group>
               </Col>
@@ -270,16 +253,16 @@ export default function AssignmentEditor() {
 
         {/* Save / Cancel */}
         <div className="text-end mt-4">
-          <Button
-            variant="secondary"
-            className="me-2 px-4"
-            onClick={handleCancel}
-          >
+          <Button variant="secondary" className="me-2 px-4" onClick={handleCancel}>
             Cancel
           </Button>
-          <Button variant="danger" className="px-4" onClick={handleSave}>
-            Save
-          </Button>
+
+          {/* Only faculty/TA/admin can save */}
+          {canEdit && (
+            <Button variant="danger" className="px-4" onClick={handleSave}>
+              Save
+            </Button>
+          )}
         </div>
       </Form>
     </div>

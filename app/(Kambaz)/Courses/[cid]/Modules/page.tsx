@@ -1,107 +1,113 @@
 "use client";
 import { useState } from "react";
-import { v4 as uuidv4 } from "uuid";
 import { useParams } from "next/navigation";
-import * as db from "../../../Database";
-import React from "react";
 import { ListGroup, ListGroupItem, FormControl } from "react-bootstrap";
+import { BsGripVertical } from "react-icons/bs";
+
 import ModulesControls from "./ModulesControls";
 import LessonControlButtons from "./LessonControlButtons";
-import { BsGripVertical } from "react-icons/bs";
 import ModuleControlButtons from "./ModuleControlButtons";
-import { addModule, editModule, updateModule, deleteModule } from "./reducer";
+
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../../store";
 
+import { addModule, editModule, updateModule, deleteModule } from "./reducer";
+
 export default function Modules() {
-  type Lesson = {
-    _id: string;
-    name: string;
-  };
+  const { cid } = useParams<{ cid: string }>();
 
-  type Module = {
-    _id: string;
-    course: string;
-    name: string;
-    lessons?: Lesson[];
-    editing?: boolean;
-  };
+  const dispatch = useDispatch();
+  const { modules } = useSelector((state: RootState) => state.modulesReducer);
 
-  const { cid } = useParams();
+  // ⭐ Get logged-in user
+  const { currentUser } = useSelector((state: RootState) => state.accountReducer);
+
+  // ⭐ Determine if user has permissions
+  const isPrivileged =
+    currentUser?.role === "FACULTY" ||
+    currentUser?.role === "TA" ||
+    currentUser?.role === "ADMIN";
 
   const [moduleName, setModuleName] = useState("");
 
-  const { modules } = useSelector((state: RootState) => state.modulesReducer);
-  const dispatch = useDispatch();
+  const filteredModules = modules.filter((module) => module.course === cid);
 
   return (
     <div style={{ marginLeft: "30px", marginRight: "30px" }}>
-      <ModulesControls
-        setModuleName={setModuleName}
-        moduleName={moduleName}
-        addModule={() => {
-          dispatch(addModule({ name: moduleName, course: cid }));
-          setModuleName("");
-        }}
-      />
-      <br />
+      
+      {/* ⭐ Only faculty/TA/admin can add modules */}
+      {isPrivileged && (
+        <ModulesControls
+          setModuleName={setModuleName}
+          moduleName={moduleName}
+          addModule={() => {
+            dispatch(addModule({ name: moduleName, course: cid }));
+            setModuleName("");
+          }}
+        />
+      )}
+
       <br />
       <br />
       <br />
 
       <ListGroup id="wd-modules" className="rounded-0">
-        {modules
-          .filter((module) => module.course === cid)
-          .map((module) => (
-            <ListGroupItem
-              key={module._id}
-              className="wd-module p-0 mb-5 fs-5 border-gray"
-            >
-              <div className="wd-title p-3 ps-2 bg-secondary">
-                <BsGripVertical className="me-2 fs-3" />
-                {!module.editing && module.name}
-                {module.editing && (
-                  <FormControl
-                    className="w-50 d-inline-block"
-                    onChange={(e) =>
-                      dispatch (
-                      updateModule({ ...module, name: e.target.value })
-                      )
+        {filteredModules.map((module) => (
+          <ListGroupItem
+            key={module._id}
+            className="wd-module p-0 mb-5 fs-5 border-gray"
+          >
+            <div className="wd-title p-3 ps-2 bg-secondary">
+              <BsGripVertical className="me-2 fs-3" />
+
+              {/* Title or inline edit field */}
+              {!module.editing && module.name}
+
+              {module.editing && isPrivileged && (
+                <FormControl
+                  className="w-50 d-inline-block"
+                  onChange={(e) =>
+                    dispatch(updateModule({ ...module, name: e.target.value }))
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      dispatch(updateModule({ ...module, editing: false }));
                     }
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        dispatch (
-                        updateModule({ ...module, editing: false })
-                        )
-                      }
-                    }}
-                    defaultValue={module.name}
-                  />
-                )}
+                  }}
+                  defaultValue={module.name}
+                />
+              )}
+
+              {/* ⭐ Control buttons only for privileged roles */}
+              {isPrivileged && (
                 <ModuleControlButtons
                   moduleId={module._id}
                   deleteModule={(moduleId) => {
                     dispatch(deleteModule(moduleId));
                   }}
-                  editModule={(moduleId) => dispatch(editModule(moduleId))} 
+                  editModule={(moduleId) => dispatch(editModule(moduleId))}
                 />
-              </div>
-
-              {module.lessons && (
-                <ListGroup className="wd-lessons rounded-0">
-                  {module.lessons.map((lesson) => (
-                    <ListGroupItem
-                      key={lesson._id}
-                      className="wd-lesson p-3 ps-1"
-                    >
-                      <BsGripVertical className="me-2 fs-3" /> {lesson.name}{" "}
-                      <LessonControlButtons />
-                    </ListGroupItem>
-                  ))}
-                </ListGroup>
               )}
-            </ListGroupItem>
-          ))}
+            </div>
+
+            {/* Lessons */}
+            {module.lessons && (
+              <ListGroup className="wd-lessons rounded-0">
+                {module.lessons.map((lesson) => (
+                  <ListGroupItem
+                    key={lesson._id}
+                    className="wd-lesson p-3 ps-1"
+                  >
+                    <BsGripVertical className="me-2 fs-3" /> {lesson.name}
+
+                    {/* ⭐ Lesson buttons also only for privileged users */}
+                    {isPrivileged && <LessonControlButtons />}
+                  </ListGroupItem>
+                ))}
+              </ListGroup>
+            )}
+          </ListGroupItem>
+        ))}
       </ListGroup>
     </div>
   );
