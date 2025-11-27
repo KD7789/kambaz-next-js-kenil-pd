@@ -46,9 +46,28 @@ export default function CoursesLayout({ children }: { children: ReactNode }) {
     loadCourses();
   }, [courses.length, dispatch]);
 
+  // Load enrollments on refresh
+  useEffect(() => {
+    const loadEnrollments = async () => {
+      if (!currentUser) return;
+  
+      const user = currentUser as { _id: string };   // 👈 minimal TS fix
+      const allEnrollments = await coursesClient.fetchEnrollments(user._id);
+  
+      dispatch({ type: "enrollments/setEnrollments", payload: allEnrollments });
+    };
+  
+    if (currentUser && enrollments.length === 0) {
+      loadEnrollments();
+    }
+  }, [currentUser, enrollments.length, dispatch]);  
+
   // 🔥 Load user? (optional, because AccountReducer may already handle it)
 
-  const loading = courses.length === 0 || !currentUser;
+  const loading =
+  courses.length === 0 ||
+  !currentUser ||
+  enrollments.length === 0;
 
   // 🔥 Redirect logic AFTER data loads
   useEffect(() => {
