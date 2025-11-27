@@ -44,6 +44,11 @@ export default function Assignments() {
     (state: RootState) => state.assignmentsReducer
   );
 
+  // NEW → role check
+  const { currentUser } = useSelector((s: RootState) => s.accountReducer);
+  const user = currentUser as { role?: string } | null;
+  const isFaculty = user?.role === "FACULTY";
+
   /** Load from server */
   const loadAssignments = async () => {
     const list = await client.findAssignmentsForCourse(cid!);
@@ -74,26 +79,29 @@ export default function Assignments() {
           className="form-control w-50"
           id="wd-search-assignment"
         />
-        <div>
-        <Button
-  variant="danger"
-  size="lg"
-  id="wd-add-assignment"
-  onClick={() => router.push(`/Courses/${cid}/Assignments/new`)}
->
-  <FaPlus className="me-2" /> Assignment
-</Button>
 
-<Button
-  variant="secondary"
-  size="lg"
-  id="wd-add-assignment-group"
-  className="ms-3"     // <-- added margin-left spacing
->
-  <FaPlus className="me-2" /> Group
-</Button>
+        {/* NEW → faculty-only buttons */}
+        {isFaculty && (
+          <div>
+            <Button
+              variant="danger"
+              size="lg"
+              id="wd-add-assignment"
+              onClick={() => router.push(`/Courses/${cid}/Assignments/new`)}
+            >
+              <FaPlus className="me-2" /> Assignment
+            </Button>
 
-        </div>
+            <Button
+              variant="secondary"
+              size="lg"
+              id="wd-add-assignment-group"
+              className="ms-3"
+            >
+              <FaPlus className="me-2" /> Group
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Assignment Groups */}
@@ -116,10 +124,16 @@ export default function Assignments() {
               >
                 40% of Total
               </span>
-              <Button variant="light" className="border me-2">
-                <FaPlus />
-              </Button>
-              <FaEllipsisV className="fs-5 text-secondary" />
+
+              {/* NEW → faculty-only */}
+              {isFaculty && (
+                <>
+                  <Button variant="light" className="border me-2">
+                    <FaPlus />
+                  </Button>
+                  <FaEllipsisV className="fs-5 text-secondary" />
+                </>
+              )}
             </div>
           </div>
 
@@ -134,12 +148,17 @@ export default function Assignments() {
                 <div>
                   <BsGripVertical className="me-2 fs-3" />
 
-                  <Link
-                    href={`/Courses/${cid}/Assignments/${assignment._id}`}
-                    className="fw-bold text-black text-decoration-none"
-                  >
-                    {assignment.title}
-                  </Link>
+                  {/* NEW → faculty can click, students cannot */}
+                  {isFaculty ? (
+                    <Link
+                      href={`/Courses/${cid}/Assignments/${assignment._id}`}
+                      className="fw-bold text-black text-decoration-none"
+                    >
+                      {assignment.title}
+                    </Link>
+                  ) : (
+                    <span className="fw-bold text-black">{assignment.title}</span>
+                  )}
 
                   <p className="mb-0 text-muted small mt-2">
                     <span className="fw-bold text-danger">Multiple Modules</span>
@@ -164,18 +183,20 @@ export default function Assignments() {
                   </p>
                 </div>
 
-                {/* RIGHT BUTTONS */}
-                <div className="d-flex align-items-center gap-2">
-                  <LessonControlButtons />
+                {/* RIGHT BUTTONS → faculty only */}
+                {isFaculty && (
+                  <div className="d-flex align-items-center gap-2">
+                    <LessonControlButtons />
 
-                  <Button
-                    variant="outline-danger"
-                    size="sm"
-                    onClick={() => handleDelete(assignment._id)}
-                  >
-                    <FaTrash />
-                  </Button>
-                </div>
+                    <Button
+                      variant="outline-danger"
+                      size="sm"
+                      onClick={() => handleDelete(assignment._id)}
+                    >
+                      <FaTrash />
+                    </Button>
+                  </div>
+                )}
               </ListGroupItem>
             ))}
           </ListGroup>
