@@ -1,4 +1,81 @@
 "use client";
+import { useState } from "react";
+import { Table } from "react-bootstrap";
+import { FaUserCircle } from "react-icons/fa";
+import PeopleDetails from "../Details";   // ✅ NEW
+import Link from "next/link";             // ✅ NEW (even if unused for now)
+
+export default function PeopleTable({
+  users = [],
+  fetchUsers,
+}: {
+  users?: Array<Record<string, unknown>>;
+  fetchUsers: () => Promise<void>;
+}) {
+
+  const [showDetails, setShowDetails] = useState(false);          // ✅ NEW
+  const [showUserId, setShowUserId] = useState<string | null>(null); // ✅ NEW
+
+  return (
+    <div id="wd-people-table" style={{ marginLeft: "30px", marginRight: "30px" }}>
+
+      {/* ✅ POPUP PANEL FOR USER DETAILS */}
+      {showDetails && (
+        <PeopleDetails
+          uid={showUserId}
+          onClose={() => {
+            setShowDetails(false);
+            fetchUsers();
+          }}
+        />
+      )}
+
+      <Table striped>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Login ID</th>
+            <th>Section</th>
+            <th>Role</th>
+            <th>Last Activity</th>
+            <th>Total Activity</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {users.map((user: Record<string, unknown>) => (
+            <tr key={user._id as string}>
+              <td className="wd-full-name text-nowrap">
+
+                {/* ✅ CLICKABLE NAME THAT OPENS THE POPUP */}
+                <span
+                  className="text-decoration-none"
+                  style={{ cursor: "pointer" }}     // (optional to show it's clickable)
+                  onClick={() => {
+                    setShowDetails(true);
+                    setShowUserId(user._id as string);
+                  }}
+                >
+                  <FaUserCircle className="me-2 fs-1 text-secondary" />
+                  <span className="wd-first-name">{user.firstName as string}</span>{" "}
+                  <span className="wd-last-name">{user.lastName as string}</span>
+                </span>
+              </td>
+
+              <td>{user.loginId as string}</td>
+              <td>{user.section as string}</td>
+              <td>{user.role as string}</td>
+              <td>{user.lastActivity as string}</td>
+              <td>{user.totalActivity as string}</td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+    </div>
+  );
+}
+
+/* "use client";
 import React from "react";
 import { useParams } from "next/navigation";
 import { Table } from "react-bootstrap";
@@ -71,7 +148,7 @@ export default function PeopleTable() {
       </Table>
     </div>
   );
-}
+} */
 
 
 

@@ -19,10 +19,12 @@ export default function AccountNavigation() {
         display: "flex",
         flexDirection: "row",
         alignItems: "center",
-        gap: "20px", // ✅ space between buttons
+        gap: "20px",
         backgroundColor: "white",
       }}
     >
+
+      {/* default links (profile / signin / signup) */}
       {links.map((link) => {
         const isActive = pathname.endsWith(link.toLowerCase());
         return (
@@ -31,10 +33,10 @@ export default function AccountNavigation() {
             href={`/Account/${link}`}
             id={`wd-${link.toLowerCase()}-link`}
             style={{
-              backgroundColor: isActive ? "#b30000" : "#dc3545", // darker when active
+              backgroundColor: isActive ? "#b30000" : "#dc3545",
               color: "white",
               borderRadius: "6px",
-              width: "120px", // ✅ consistent button width
+              width: "120px",
               height: "40px",
               display: "flex",
               alignItems: "center",
@@ -49,6 +51,34 @@ export default function AccountNavigation() {
           </Link>
         );
       })}
+
+      {/* professor's ADMIN → Users link */}
+      {currentUser && (currentUser as Record<string, unknown>).role
+ === "ADMIN" && (
+        <Link
+          href="/Account/Users"
+          id="wd-users-link"
+          style={{
+            backgroundColor: pathname.endsWith("users")
+              ? "#b30000"
+              : "#dc3545",
+            color: "white",
+            borderRadius: "6px",
+            width: "120px",
+            height: "40px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            textDecoration: "none",
+            fontWeight: 600,
+            fontSize: "16px",
+            transition: "background-color 0.2s ease",
+          }}
+        >
+          Users
+        </Link>
+      )}
+
     </Nav>
   );
 }
