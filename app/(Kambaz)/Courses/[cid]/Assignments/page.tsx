@@ -6,6 +6,7 @@ import { RootState } from "../../../store";
 import {
   setAssignments,
   deleteAssignmentInStore,
+  type Assignment
 } from "./reducer";
 import * as client from "../../client";
 import {
@@ -19,22 +20,6 @@ import Link from "next/link";
 import LessonControlButtons from "../Modules/LessonControlButtons";
 import React from "react";
 
-interface Assignment {
-  _id: string;
-  title: string;
-  course: string;
-  points: number;
-  group: string;
-  gradeDisplay: string;
-  submissionType: string;
-  onlineEntryOptions: string[];
-  assignTo: string;
-  dueDate: string;
-  availableFrom: string;
-  availableUntil: string;
-  description: string;
-}
-
 export default function Assignments() {
   const { cid } = useParams<{ cid: string }>();
   const router = useRouter();
@@ -44,22 +29,21 @@ export default function Assignments() {
     (state: RootState) => state.assignmentsReducer
   );
 
-  // NEW → role check
   const { currentUser } = useSelector((s: RootState) => s.accountReducer);
   const user = currentUser as { role?: string } | null;
   const isFaculty = user?.role === "FACULTY";
 
-  /** Load from server */
-  const loadAssignments = async () => {
+  /** Load assignments from server */
+  const loadAssignments = React.useCallback(async () => {
     const list = await client.findAssignmentsForCourse(cid!);
     dispatch(setAssignments(list));
-  };
+  }, [cid, dispatch]);
 
   React.useEffect(() => {
     loadAssignments();
-  }, [cid]);
+  }, [loadAssignments]);
 
-  const courseAssignments = assignments.filter((a) => a.course === cid);
+  const courseAssignments = assignments; // No manual filtering needed
 
   /** Delete assignment */
   const handleDelete = async (id: string) => {
@@ -80,7 +64,6 @@ export default function Assignments() {
           id="wd-search-assignment"
         />
 
-        {/* NEW → faculty-only buttons */}
         {isFaculty && (
           <div>
             <Button
@@ -125,7 +108,6 @@ export default function Assignments() {
                 40% of Total
               </span>
 
-              {/* NEW → faculty-only */}
               {isFaculty && (
                 <>
                   <Button variant="light" className="border me-2">
@@ -137,18 +119,16 @@ export default function Assignments() {
             </div>
           </div>
 
-          {/* ASSIGNMENT LIST */}
+          {/* ASSIGNMENTS LIST */}
           <ListGroup className="wd-assignments rounded-0">
-            {courseAssignments.map((assignment: Assignment) => (
+            {courseAssignments.map((assignment) => (
               <ListGroupItem
                 key={assignment._id}
                 className="wd-assignment p-3 ps-2 d-flex justify-content-between align-items-center"
               >
-                {/* LEFT INFO */}
                 <div>
                   <BsGripVertical className="me-2 fs-3" />
 
-                  {/* NEW → faculty can click, students cannot */}
                   {isFaculty ? (
                     <Link
                       href={`/Courses/${cid}/Assignments/${assignment._id}`}
@@ -183,7 +163,6 @@ export default function Assignments() {
                   </p>
                 </div>
 
-                {/* RIGHT BUTTONS → faculty only */}
                 {isFaculty && (
                   <div className="d-flex align-items-center gap-2">
                     <LessonControlButtons />

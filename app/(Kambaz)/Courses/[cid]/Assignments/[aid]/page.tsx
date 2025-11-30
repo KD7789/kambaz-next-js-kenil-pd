@@ -6,10 +6,8 @@ import { RootState } from "../../../../store";
 import {
   updateAssignmentInStore,
   setAssignments,
+  type Assignment,
 } from "../reducer";
-
-import type { Assignment } from "../reducer";   // ← ADD THIS
-
 
 import * as client from "../../../client";
 
@@ -27,6 +25,7 @@ export default function AssignmentEditor() {
 
   const existingAssignment = assignments.find((a) => a._id === aid);
 
+  /** Default new assignment template */
   const [assignment, setAssignment] = useState<Assignment>(
     existingAssignment || {
       _id: "",
@@ -45,12 +44,26 @@ export default function AssignmentEditor() {
     }
   );
 
+  /** When opened directly, fetch assignment from server */
   useEffect(() => {
-    if (existingAssignment) setAssignment(existingAssignment);
-  }, [existingAssignment]);
+    const loadFromServer = async () => {
+      if (!existingAssignment) {
+        const fetched = await client.findAssignmentById(aid!);
+        setAssignment(fetched);
+      }
+    };
+    loadFromServer();
+  }, [aid, existingAssignment]);
 
+  /** Format date for <input type="date"> */
+  const normalizeDate = (d?: string | Date) =>
+    d ? new Date(d).toISOString().slice(0, 10) : "";
+
+  /** Generic change handler for text/select/textarea */
   const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { id, value } = e.target;
     setAssignment((prev) => ({
@@ -59,13 +72,29 @@ export default function AssignmentEditor() {
     }));
   };
 
-  /** SAVE: Create or Update */
+  /** Checkbox handler for onlineEntryOptions[] */
+  const handleEntryOptionChange = (option: string) => {
+    setAssignment((prev) => {
+      const hasOption = prev.onlineEntryOptions.includes(option);
+      return {
+        ...prev,
+        onlineEntryOptions: hasOption
+          ? prev.onlineEntryOptions.filter((o) => o !== option)
+          : [...prev.onlineEntryOptions, option],
+      };
+    });
+  };
+
+  /** SAVE (create or update) */
   const handleSave = async () => {
     if (existingAssignment) {
-      const updated = await client.updateAssignment(assignment) as Assignment;
+      const updated = await client.updateAssignment(assignment);
       dispatch(updateAssignmentInStore(updated));
     } else {
-      const created = await client.createAssignmentForCourse(cid!, assignment) as Assignment;
+      // Strip _id so Mongo can generate it
+      const { _id, ...newData } = assignment;
+
+      const created = await client.createAssignmentForCourse(cid!, newData);
       dispatch(setAssignments([...assignments, created]));
     }
 
@@ -79,7 +108,7 @@ export default function AssignmentEditor() {
   return (
     <div id="wd-assignments-editor" className="p-4">
       <Form>
-        {/* Name */}
+        {/* Assignment Name */}
         <Form.Group className="mb-4" controlId="wd-title">
           <Form.Label className="fw-semibold">Assignment Name</Form.Label>
           <Form.Control
@@ -103,28 +132,24 @@ export default function AssignmentEditor() {
         {/* Points */}
         <Row className="mb-4">
           <Col md={3}>
-            <Form.Group controlId="wd-points" className="d-flex align-items-center">
+            <Form.Group controlId="wd-points">
               <Form.Label className="fw-semibold mb-0 me-2">Points</Form.Label>
               <Form.Control
                 type="number"
                 value={assignment.points}
-                style={{ width: "300px" }}
                 onChange={handleChange}
               />
             </Form.Group>
           </Col>
         </Row>
 
-        {/* Group */}
+        {/* Assignment Group */}
         <Row className="mb-4">
           <Col md={4}>
-            <Form.Group controlId="wd-group" className="d-flex align-items-center">
-              <Form.Label className="fw-semibold mb-0 me-2">
-                Assignment Group
-              </Form.Label>
+            <Form.Group controlId="wd-group">
+              <Form.Label className="fw-semibold">Assignment Group</Form.Label>
               <Form.Select
                 value={assignment.group}
-                style={{ width: "300px" }}
                 onChange={handleChange}
               >
                 <option value="ASSIGNMENTS">ASSIGNMENTS</option>
@@ -136,16 +161,15 @@ export default function AssignmentEditor() {
           </Col>
         </Row>
 
-        {/* Grade display */}
+        {/* Grade Display */}
         <Row className="mb-4">
           <Col md={4}>
-            <Form.Group controlId="wd-gradeDisplay" className="d-flex align-items-center">
-              <Form.Label className="fw-semibold mb-0 me-2">
+            <Form.Group controlId="wd-gradeDisplay">
+              <Form.Label className="fw-semibold">
                 Display Grade as
               </Form.Label>
               <Form.Select
                 value={assignment.gradeDisplay}
-                style={{ width: "300px" }}
                 onChange={handleChange}
               >
                 <option value="Percentage">Percentage</option>
@@ -158,18 +182,18 @@ export default function AssignmentEditor() {
           </Col>
         </Row>
 
-        {/* Submission Type */}
-        <div className="d-flex align-items-start mb-4">
-          <Form.Label className="fw-semibold mb-0 me-2">Submission Type</Form.Label>
-          <div className="border p-3 rounded mb-4">
-            <Form.Group
-              controlId="wd-submissionType"
-              className="d-flex align-items-center mb-3"
-            >
+        {/* Submission Type + Entry Options */}
+        <div className="mb-4">
+          <Form.Label className="fw-semibold me-3">
+            Submission Type
+          </Form.Label>
+
+          <div className="border rounded p-3 mt-2">
+            <Form.Group controlId="wd-submissionType" className="mb-3">
               <Form.Select
                 value={assignment.submissionType}
-                style={{ width: "300px" }}
                 onChange={handleChange}
+                style={{ width: "300px" }}
               >
                 <option value="Online">Online</option>
                 <option value="On Paper">On Paper</option>
@@ -177,23 +201,39 @@ export default function AssignmentEditor() {
               </Form.Select>
             </Form.Group>
 
-            <Form.Group controlId="wd-onlineEntryOptions">
-              <Form.Label className="fw-semibold mb-2">Online Entry Options</Form.Label>
-              <div className="ms-3">
-                <Form.Check type="checkbox" label="Text Entry" />
-                <Form.Check type="checkbox" label="Website URL" />
-                <Form.Check type="checkbox" label="Media Recordings" />
-                <Form.Check type="checkbox" label="Student Annotation" />
-                <Form.Check type="checkbox" label="File Uploads" />
+            {/* Online Entry Options */}
+            {assignment.submissionType === "Online" && (
+              <div>
+                <Form.Label className="fw-semibold mb-2">
+                  Online Entry Options
+                </Form.Label>
+                <div className="ms-3">
+                  {[
+                    "Text Entry",
+                    "Website URL",
+                    "Media Recordings",
+                    "Student Annotation",
+                    "File Uploads",
+                  ].map((opt) => (
+                    <Form.Check
+                      key={opt}
+                      type="checkbox"
+                      label={opt}
+                      checked={assignment.onlineEntryOptions.includes(opt)}
+                      onChange={() => handleEntryOptionChange(opt)}
+                    />
+                  ))}
+                </div>
               </div>
-            </Form.Group>
+            )}
           </div>
         </div>
 
-        {/* Assign / Dates */}
-        <div className="d-flex align-items-start mb-4">
-          <Form.Label className="fw-semibold mb-0 me-2">Assign</Form.Label>
-          <div className="border p-3 rounded mb-4">
+        {/* Assign To + Dates */}
+        <div className="mb-4">
+          <Form.Label className="fw-semibold">Assign</Form.Label>
+
+          <div className="border rounded p-3 mt-2">
             <Form.Group className="mb-4" controlId="wd-assignTo">
               <Form.Label className="fw-semibold">Assign to</Form.Label>
               <Form.Control
@@ -203,39 +243,36 @@ export default function AssignmentEditor() {
               />
             </Form.Group>
 
+            {/* Dates */}
             <Row>
               <Form.Group controlId="wd-dueDate">
                 <Form.Label className="fw-semibold">Due</Form.Label>
                 <Form.Control
                   type="date"
-                  value={assignment.dueDate?.slice(0, 10) || ""}
+                  value={normalizeDate(assignment.dueDate)}
                   onChange={handleChange}
                 />
               </Form.Group>
 
               <Col md={4}>
-                <Form.Group
-                  controlId="wd-availableFrom"
-                  style={{ marginBlockStart: "30px" }}
-                >
-                  <Form.Label className="fw-semibold">Available from</Form.Label>
+                <Form.Group controlId="wd-availableFrom" className="mt-4">
+                  <Form.Label className="fw-semibold">
+                    Available from
+                  </Form.Label>
                   <Form.Control
                     type="date"
-                    value={assignment.availableFrom?.slice(0, 10) || ""}
+                    value={normalizeDate(assignment.availableFrom)}
                     onChange={handleChange}
                   />
                 </Form.Group>
               </Col>
 
               <Col md={4}>
-                <Form.Group
-                  controlId="wd-availableUntil"
-                  style={{ marginBlockStart: "30px" }}
-                >
+                <Form.Group controlId="wd-availableUntil" className="mt-4">
                   <Form.Label className="fw-semibold">Until</Form.Label>
                   <Form.Control
                     type="date"
-                    value={assignment.availableUntil?.slice(0, 10) || ""}
+                    value={normalizeDate(assignment.availableUntil)}
                     onChange={handleChange}
                   />
                 </Form.Group>
@@ -244,6 +281,7 @@ export default function AssignmentEditor() {
           </div>
         </div>
 
+        {/* Save / Cancel */}
         <div className="text-end mt-4">
           <Button variant="secondary" onClick={handleCancel} className="me-2 px-4">
             Cancel

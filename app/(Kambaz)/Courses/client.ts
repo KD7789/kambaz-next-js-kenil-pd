@@ -155,8 +155,8 @@ export const findAssignmentsForCourse = async (
 
   export const createAssignmentForCourse = async (
     courseId: string,
-    assignment: Assignment
-  ): Promise<Assignment> => {
+    assignment: Omit<Assignment, "_id">
+  ): Promise<Assignment> => {  
     const { data } = await axiosWithCredentials.post(
       `${COURSES_API}/${courseId}/assignments`,
       assignment
