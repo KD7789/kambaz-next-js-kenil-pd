@@ -91,10 +91,22 @@ const isFaculty = user?.role === "FACULTY";
         <ModulesControls
           setModuleName={setModuleName}
           moduleName={moduleName}
-          addModule={() => {
-            dispatch(addModule({ name: moduleName, course: cid as string }));
+          addModule={async () => {
+            if (!moduleName.trim()) return;
+          
+            // 1. Save to server (MongoDB)
+            const saved = await client.createModuleForCourse(cid as string, {
+              name: moduleName,
+              course: cid as string,
+            });
+          
+            // 2. Refresh modules from server
+            fetchModules();
+          
+            // 3. Clear input
             setModuleName("");
           }}
+          
         />
       )}
 

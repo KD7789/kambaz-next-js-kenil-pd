@@ -46,6 +46,17 @@ export default function CoursesLayout({ children }: { children: ReactNode }) {
     loadCourses();
   }, [courses.length, dispatch]);
 
+  useEffect(() => {
+    const loadModules = async () => {
+      if (!cid) return;
+  
+      const modules = await coursesClient.findModulesForCourse(cid as string);
+      dispatch({ type: "modules/setModules", payload: modules });
+    };
+  
+    loadModules();
+  }, [cid, dispatch]);
+
   // Load enrollments on refresh
   useEffect(() => {
     const loadEnrollments = async () => {
