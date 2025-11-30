@@ -65,7 +65,7 @@ export const createCourse = async (
   course: CreateCourseInput
 ): Promise<Course> => {
   const { data } = await axiosWithCredentials.post(
-    `${USERS_API}/current/courses`,
+    `${HTTP_SERVER}/api/courses`,
     course
   );
   return data;
