@@ -79,8 +79,17 @@ export default function Dashboard() {
 
   const loadEnrollments = async () => {
     if (!typedUser) return;
-    const list = await Client.fetchEnrollments(typedUser._id);
-    dispatch(setEnrollments(list));
+  
+    const courseList = await Client.fetchEnrollments(typedUser._id);
+  
+    // Convert Course[] to Enrollment[]
+    const enrollmentList = courseList.map((c) => ({
+      _id: `${typedUser._id}-${c._id}`,
+      user: typedUser._id,
+      course: c._id
+    }));
+  
+    dispatch(setEnrollments(enrollmentList));
   };  
 
   useEffect(() => {

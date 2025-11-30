@@ -179,13 +179,13 @@ export const updateAssignment = async (
    ENROLLMENTS
 --------------------------------------------------- */
 export const fetchEnrollments = async (
-    userId: string
-  ): Promise<Enrollment[]> => {
-    const { data } = await axiosWithCredentials.get(
-      `${USERS_API}/${userId}/enrollments`
-    );
-    return data as Enrollment[];
-  };
+  userId: string
+): Promise<Course[]> => {
+  const { data } = await axiosWithCredentials.get(
+    `${USERS_API}/${userId}/courses`
+  );
+  return data;
+};
   
   export const enrollInCourse = async (
     userId: string,
