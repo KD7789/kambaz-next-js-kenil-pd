@@ -11,6 +11,7 @@ export type Course = {
   credits: number;
   description: string;
   img: string;
+  image: string,
 };
 
 interface CoursesState {

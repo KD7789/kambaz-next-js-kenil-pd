@@ -55,6 +55,7 @@ export default function Dashboard() {
     credits: 3,
     description: "New Description",
     img: "/images/Teslabot.jpg",
+    image: "/images/Teslabot.jpg",
   });
 
   // ============================================================
