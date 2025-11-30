@@ -16,7 +16,7 @@ const links = [
   { label: "Assignments", internal: true },
   { label: "Quizzes", internal: false, url: "https://northeastern.instructure.com/courses/225988/quizzes" },
   { label: "Grades", internal: false, url: "https://northeastern.instructure.com/courses/225988/grades" },
-  { label: "People", internal: true, customPath: "People/Table" },
+  { label: "People", internal: true, customPath: "People" },
 ];
 
 export default function CourseNavigation({ cid }: Props) {

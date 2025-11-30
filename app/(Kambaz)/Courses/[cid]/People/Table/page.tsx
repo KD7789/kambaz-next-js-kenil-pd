@@ -2,30 +2,30 @@
 import { useState } from "react";
 import { Table } from "react-bootstrap";
 import { FaUserCircle } from "react-icons/fa";
-import PeopleDetails from "../Details";   // ✅ NEW
-import Link from "next/link";             // ✅ NEW (even if unused for now)
+import PeopleDetails from "../Details";
+import Link from "next/link";
 
 export default function PeopleTable({
   users = [],
   fetchUsers,
 }: {
   users?: Array<Record<string, unknown>>;
-  fetchUsers: () => Promise<void>;
+  fetchUsers?: () => Promise<void>;   // ✅ MADE OPTIONAL
 }) {
 
-  const [showDetails, setShowDetails] = useState(false);          // ✅ NEW
-  const [showUserId, setShowUserId] = useState<string | null>(null); // ✅ NEW
+  const [showDetails, setShowDetails] = useState(false);
+  const [showUserId, setShowUserId] = useState<string | null>(null);
 
   return (
     <div id="wd-people-table" style={{ marginLeft: "30px", marginRight: "30px" }}>
 
-      {/* ✅ POPUP PANEL FOR USER DETAILS */}
+      {/* USER DETAILS POPUP */}
       {showDetails && (
         <PeopleDetails
           uid={showUserId}
           onClose={() => {
             setShowDetails(false);
-            fetchUsers();
+            if (fetchUsers) fetchUsers();     // ✅ SAFE CALL
           }}
         />
       )}
@@ -46,11 +46,9 @@ export default function PeopleTable({
           {users.map((user: Record<string, unknown>) => (
             <tr key={user._id as string}>
               <td className="wd-full-name text-nowrap">
-
-                {/* ✅ CLICKABLE NAME THAT OPENS THE POPUP */}
                 <span
                   className="text-decoration-none"
-                  style={{ cursor: "pointer" }}     // (optional to show it's clickable)
+                  style={{ cursor: "pointer" }}
                   onClick={() => {
                     setShowDetails(true);
                     setShowUserId(user._id as string);
@@ -74,6 +72,7 @@ export default function PeopleTable({
     </div>
   );
 }
+
 
 /* "use client";
 import React from "react";
