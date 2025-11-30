@@ -67,15 +67,15 @@ export default function Modules() {
      DELETE
   -------------------------- */
   const onRemoveModule = async (moduleId: string) => {
-    await coursesClient.deleteModule(moduleId);
+    await coursesClient.deleteModule(cid, moduleId);
     dispatch(setModules(modules.filter((m: Module) => m._id !== moduleId)));
-  };
+  };  
 
   /* --------------------------
      UPDATE
   -------------------------- */
   const onUpdateModule = async (module: Module) => {
-    await coursesClient.updateModule(module);
+    await coursesClient.updateModule(cid as string, module);
     const newModules = modules.map((m: Module) =>
       m._id === module._id ? module : m
     );
