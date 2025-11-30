@@ -106,7 +106,7 @@ export default function Dashboard() {
 // ENROLL / UNENROLL
 // ============================================================
 const isEnrolled = (courseId: string) =>
-  enrollments.some((e) => e.course === courseId);
+  enrollments?.some?.((e) => e?.user && e?.course === courseId) ?? false;
 
 const handleEnroll = async (courseId: string) => {
   if (!typedUser) return;

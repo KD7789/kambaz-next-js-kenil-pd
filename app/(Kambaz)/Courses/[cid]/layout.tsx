@@ -82,7 +82,7 @@ export default function CoursesLayout({ children }: { children: ReactNode }) {
 
     const isFaculty = user.role === "FACULTY" || user.role === "ADMIN";
     const isEnrolled = enrollments.some(
-      (e) => e.user === user._id && e.course === cid
+      (e) => e?.user === user._id && e.course === cid
     );
 
     if (isFaculty) return;
