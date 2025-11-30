@@ -106,23 +106,35 @@ export default function Dashboard() {
 // ENROLL / UNENROLL
 // ============================================================
 const isEnrolled = (courseId: string) =>
-enrollments.some((e) => e.course === courseId);
+  enrollments.some((e) => e.course === courseId);
 
 const handleEnroll = async (courseId: string) => {
-const newEnroll = await Client.enrollInCourse(typedUser!._id, courseId);
-dispatch(addEnrollmentToStore(newEnroll));
-loadMyCourses();
+  if (!typedUser) return;
+
+  await Client.enrollIntoCourse(typedUser._id, courseId);
+
+  // Add to Redux manually
+  dispatch(
+    addEnrollmentToStore({
+      _id: `${typedUser._id}-${courseId}`,
+      user: typedUser._id,
+      course: courseId,
+    })
+  );
+
+  loadMyCourses();
 };
 
 const handleUnenroll = async (courseId: string) => {
-const enrollment = enrollments.find(
-  (e) => e.course === courseId && e.user === typedUser!._id
-);
-if (!enrollment) return;
+  if (!typedUser) return;
 
-await Client.unenrollFromCourse(enrollment._id);
-dispatch(removeEnrollmentFromStore(enrollment._id));
-loadMyCourses();
+  await Client.unenrollFromCourse(typedUser._id, courseId);
+
+  // Remove from Redux store
+  dispatch(removeEnrollmentFromStore(`${typedUser._id}-${courseId}`));
+
+  // Reload my courses
+  loadMyCourses();
 };
 
 
