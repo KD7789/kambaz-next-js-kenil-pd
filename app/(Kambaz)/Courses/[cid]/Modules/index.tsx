@@ -114,9 +114,10 @@ export default function Modules() {
                 }
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
-                    onUpdateModule({ ...module, editing: false });
+                    const newName = (e.target as HTMLInputElement).value;
+                    onUpdateModule({ ...module, name: newName, editing: false });
                   }
-                }}
+                }}                
               />
             )}
 

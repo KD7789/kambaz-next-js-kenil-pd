@@ -129,15 +129,16 @@ const isFaculty = user?.role === "FACULTY";
               {module.editing && isFaculty && (
                 <FormControl
                   className="w-50 d-inline-block"
-                  defaultValue={module.name}
+                  value={module.name}
                   onChange={(e) =>
                     dispatch(updateModule({ ...module, name: e.target.value }))
                   }
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
-                      onUpdateModule({ ...module, editing: false });
+                      const newName = (e.target as HTMLInputElement).value;
+                      onUpdateModule({ ...module, name: newName, editing: false });
                     }
-                  }}
+                  }}                  
                 />
               )}
 

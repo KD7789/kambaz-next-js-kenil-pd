@@ -19,16 +19,22 @@ export default function AssignmentEditor() {
   const router = useRouter();
   const dispatch = useDispatch();
 
+  // "new" → create mode, anything else → edit mode
+  const isNew = aid === "new";
+
   const { assignments } = useSelector(
     (state: RootState) => state.assignmentsReducer
   );
 
-  const existingAssignment = assignments.find((a) => a._id === aid);
+  // Only try to find an existing assignment when we're not in "new" mode
+  const existingAssignment = !isNew
+    ? assignments.find((a) => a._id === aid)
+    : undefined;
 
-  /** Default new assignment template */
+  /** Default assignment template */
   const [assignment, setAssignment] = useState<Assignment>(
     existingAssignment || {
-      _id: "",
+      _id: isNew ? "" : (aid ?? ""),
       title: "",
       description: "",
       course: cid!,
@@ -44,16 +50,20 @@ export default function AssignmentEditor() {
     }
   );
 
-  /** When opened directly, fetch assignment from server */
+  /** When opened directly (refresh / deep link), fetch assignment from server */
   useEffect(() => {
-    const loadFromServer = async () => {
+    const load = async () => {
+      if (isNew) return;
+      if (!aid) return; // critical guard
+  
+      // fetch only if not found in Redux
       if (!existingAssignment) {
-        const fetched = await client.findAssignmentById(aid!);
+        const fetched = await client.findAssignmentById(aid);
         setAssignment(fetched);
       }
     };
-    loadFromServer();
-  }, [aid, existingAssignment]);
+    load();
+  }, [aid, isNew, existingAssignment]);  
 
   /** Format date for <input type="date"> */
   const normalizeDate = (d?: string | Date) =>
@@ -87,13 +97,13 @@ export default function AssignmentEditor() {
 
   /** SAVE (create or update) */
   const handleSave = async () => {
-    if (existingAssignment) {
+    if (!isNew) {
+      // EDIT / UPDATE existing assignment
       const updated = await client.updateAssignment(assignment);
       dispatch(updateAssignmentInStore(updated));
     } else {
-      // Strip _id so Mongo can generate it
-      const { _id, ...newData } = assignment;
-
+      // CREATE new assignment
+      const { _id, ...newData } = assignment; // let Mongo / server decide _id
       const created = await client.createAssignmentForCourse(cid!, newData);
       dispatch(setAssignments([...assignments, created]));
     }
