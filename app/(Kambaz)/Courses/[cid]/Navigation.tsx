@@ -14,7 +14,7 @@ const links = [
   { label: "Piazza", internal: false, url: "https://piazza.com/class/mf9tt3f8vlw16f" },
   { label: "Zoom", internal: false, url: "https://www.zoom.com/" },
   { label: "Assignments", internal: true },
-  { label: "Quizzes", internal: false, url: "https://northeastern.instructure.com/courses/225988/quizzes" },
+  { label: "Quizzes", internal: true },
   { label: "Grades", internal: false, url: "https://northeastern.instructure.com/courses/225988/grades" },
   { label: "People", internal: true, customPath: "People" },
 ];

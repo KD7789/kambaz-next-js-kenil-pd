@@ -1,0 +1,280 @@
+"use client";
+
+import { useEffect, useCallback, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "../../../../../store";
+
+import { setCurrentQuiz } from "../../reducer";
+import * as client from "../../../../client";
+import { Button, Form } from "react-bootstrap";
+import type { Quiz } from "../../reducer";
+import type { Question } from "../../types";
+
+/* -----------------------------------------
+   Types
+--------------------------------------------*/
+
+interface MCQChoice {
+  _id: string;
+  text: string;
+  isCorrect: boolean;
+}
+
+/* Student-style answer map for preview */
+type AnswerMap = Record<string, string>;
+
+export default function PreviewQuiz() {
+  const { cid, qid } = useParams<{ cid: string; qid: string }>();
+  const dispatch = useDispatch();
+  const router = useRouter();
+
+  const quiz = useSelector(
+    (state: RootState) => state.quizzesReducer.currentQuiz
+  );
+
+  const user = useSelector(
+    (state: RootState) =>
+      state.accountReducer.currentUser as { role: string } | null
+  );  
+
+  const isFaculty = user?.role === "FACULTY";
+
+  const [answers, setAnswers] = useState<AnswerMap>({});
+  const [submitted, setSubmitted] = useState(false);
+
+  /* -----------------------------------------
+     Load quiz (with type safety)
+  --------------------------------------------*/
+  const loadQuiz = useCallback(async () => {
+    const data: Quiz = await client.findQuizById(qid);
+    dispatch(setCurrentQuiz(data));
+
+    const initial: AnswerMap = {};
+    data.questions?.forEach((q: Question) => {
+      initial[q._id] = "";
+    });
+
+    setAnswers(initial);
+  }, [dispatch, qid]);
+
+  useEffect(() => {
+    loadQuiz();
+  }, [loadQuiz]);
+
+  if (!quiz) {
+    return <div style={{ padding: "20px" }}>Loading...</div>;
+  }
+
+  if (!isFaculty) {
+    return (
+      <div style={{ padding: "20px" }}>
+        <h4>Only faculty can preview quizzes.</h4>
+      </div>
+    );
+  }
+
+  const questions: Question[] = quiz.questions || [];
+
+  /* -----------------------------------------
+     Save answer locally
+  --------------------------------------------*/
+  const handleChange = (questionId: string, value: string) => {
+    setAnswers((prev) => ({ ...prev, [questionId]: value }));
+  };
+
+  /* -----------------------------------------
+     Submit (does NOT hit backend)
+  --------------------------------------------*/
+  const submitPreview = () => {
+    setSubmitted(true);
+  };
+
+  /* -----------------------------------------
+     Evaluate correctness
+  --------------------------------------------*/
+  const isCorrect = (q: Question, ans: string): boolean => {
+    if (q.type === "MCQ") {
+      return Boolean(q.choices?.find((c) => c._id === ans)?.isCorrect);
+    }
+
+    if (q.type === "TRUE_FALSE") {
+      return String(q.correctBoolean) === String(ans);
+    }
+
+    if (q.type === "FILL_IN_BLANK") {
+      return (
+        q.acceptableAnswers?.some(
+          (a) => a.trim().toLowerCase() === ans.trim().toLowerCase()
+        ) ?? false
+      );
+    }
+
+    return false;
+  };
+
+  /* -----------------------------------------
+     Render question UI
+  --------------------------------------------*/
+  const renderQuestion = (q: Question) => {
+    const studentAnswer = answers[q._id] || "";
+
+    /* -------------------------------------
+       After Submission — Feedback Mode
+    ----------------------------------------*/
+    if (submitted) {
+      const correct = isCorrect(q, studentAnswer);
+
+      return (
+        <div
+          className="p-2 mt-2"
+          style={{
+            borderRadius: "5px",
+            background: correct ? "#e6ffed" : "#ffe6e6",
+            border: correct ? "1px solid #28a745" : "1px solid #dc3545",
+          }}
+        >
+          <strong style={{ color: correct ? "#28a745" : "#dc3545" }}>
+            {correct ? "✔ Correct" : "✘ Incorrect"}
+          </strong>
+
+          {/* MORE DETAIL PER TYPE */}
+          {q.type === "MCQ" && (
+            <div className="mt-1">
+              <b>Your answer:</b>{" "}
+              {q.choices?.find((c) => c._id === studentAnswer)?.text ||
+                "(No answer)"}
+              <br />
+              <b>Correct answer:</b>{" "}
+              {q.choices?.find((c) => c.isCorrect)?.text}
+            </div>
+          )}
+
+          {q.type === "TRUE_FALSE" && (
+            <div className="mt-1">
+              <b>Your answer:</b> {studentAnswer}
+              <br />
+              <b>Correct answer:</b> {String(q.correctBoolean)}
+            </div>
+          )}
+
+          {q.type === "FILL_IN_BLANK" && (
+            <div className="mt-1">
+              <b>Your answer:</b> {studentAnswer || "(No answer)"}
+              <br />
+              <b>Correct answers:</b>{" "}
+              {q.acceptableAnswers?.join(", ") || ""}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    /* -------------------------------------
+       Before Submission — Input Mode
+    ----------------------------------------*/
+    if (q.type === "MCQ") {
+      return (
+        <div className="mt-2">
+          {q.choices?.map((choice) => (
+            <Form.Check
+              key={choice._id}
+              type="radio"
+              name={`mcq-${q._id}`}
+              label={choice.text}
+              checked={studentAnswer === choice._id}
+              onChange={() => handleChange(q._id, choice._id)}
+            />
+          ))}
+        </div>
+      );
+    }
+
+    if (q.type === "TRUE_FALSE") {
+      return (
+        <div className="mt-2">
+          <Form.Check
+            type="radio"
+            label="True"
+            checked={studentAnswer === "true"}
+            onChange={() => handleChange(q._id, "true")}
+          />
+          <Form.Check
+            type="radio"
+            label="False"
+            checked={studentAnswer === "false"}
+            onChange={() => handleChange(q._id, "false")}
+          />
+        </div>
+      );
+    }
+
+    if (q.type === "FILL_IN_BLANK") {
+      return (
+        <div className="mt-2">
+          <Form.Control
+            placeholder="Your answer"
+            value={studentAnswer}
+            onChange={(e) => handleChange(q._id, e.target.value)}
+          />
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  /* -----------------------------------------
+     Main Render
+  --------------------------------------------*/
+  return (
+    <div style={{ padding: "20px" }}>
+      <h3>Preview: {quiz.title}</h3>
+
+      <p className="text-muted">
+        This is how students will see the quiz. Your answers will NOT be saved.
+      </p>
+
+      {questions.map((q, idx) => (
+        <div
+          key={q._id}
+          className="border rounded p-3 mb-4"
+          style={{ background: "#fafafa" }}
+        >
+          <h5>
+            Question {idx + 1} ({q.points} pts)
+          </h5>
+
+          <div dangerouslySetInnerHTML={{ __html: q.text }} />
+
+          {renderQuestion(q)}
+        </div>
+      ))}
+
+      {!submitted ? (
+        <Button variant="danger" onClick={submitPreview}>
+          Submit Preview
+        </Button>
+      ) : (
+        <>
+          <Button
+            variant="secondary"
+            onClick={() =>
+              router.push(`/Courses/${cid}/Quizzes/${qid}/Edit`)
+            }
+          >
+            Edit Quiz
+          </Button>
+
+          <Button
+            variant="danger"
+            className="ms-2"
+            onClick={() => setSubmitted(false)}
+          >
+            Try Again
+          </Button>
+        </>
+      )}
+    </div>
+  );
+}

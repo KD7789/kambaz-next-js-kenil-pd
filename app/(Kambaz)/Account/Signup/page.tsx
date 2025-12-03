@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { FormControl, Button } from "react-bootstrap";
-import { useState, ChangeEvent } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { setCurrentUser } from "../reducer";
@@ -9,18 +9,26 @@ import * as client from "../client";
 import { AxiosError } from "axios";
 
 export default function Signup() {
-  const [user, setUser] = useState({ username: "", password: "" });
+  const [user, setUser] = useState({
+    username: "",
+    password: "",
+    role: "USER", // default matches your schema
+  });
 
-  // We don't use the error directly
   const [, setError] = useState("");
 
   const router = useRouter();
   const dispatch = useDispatch();
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
     const { id, value } = e.target;
-    setUser((prev) => ({ ...prev, [id.replace("wd-", "")]: value }));
-  };
+    const key = id.replace("wd-", "");
+    setUser((prev) => ({ ...prev, [key]: value }));
+  };  
 
   const handleSignup = async () => {
     try {
@@ -29,12 +37,9 @@ export default function Signup() {
       router.push("/Account/Profile");
     } catch (err: unknown) {
       let message = "Signup failed!";
-
-      // Safe Axios error narrowing
       if (err instanceof AxiosError) {
         message = err.response?.data?.message || message;
       }
-
       setError(message);
       alert(message);
     }
@@ -73,6 +78,18 @@ export default function Signup() {
         value={user.password}
         onChange={handleChange}
       />
+
+      <select
+        id="wd-role"
+        className="mb-3 form-control"
+        value={user.role}
+        onChange={handleChange}
+      >
+        <option value="STUDENT">Student</option>
+        <option value="FACULTY">Faculty</option>
+        <option value="ADMIN">Admin</option>
+        <option value="USER">User</option>
+      </select>
 
       <Button
         id="wd-signup-btn"

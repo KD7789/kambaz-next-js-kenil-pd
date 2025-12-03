@@ -2,6 +2,7 @@ import axios from "axios";
 import type { Assignment } from "./[cid]/Assignments/reducer";
 import type { Course } from "./reducer";
 import type { Enrollment } from "../Enrollments/reducer";
+import type { Quiz, Question, Answer } from "../Courses/[cid]/Quizzes/reducer";
 
 
 
@@ -217,5 +218,91 @@ export const fetchEnrollments = async (
     const response = await axios.get(`${COURSES_API}/${courseId}/users`);
     return response.data;
    };   
+
+const BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000";
+
+/* -----------------------------
+   QUIZZES API
+------------------------------*/
+
+// Get quizzes for a course
+export const findQuizzesForCourse = async (courseId: string) => {
+  const response = await axios.get(
+    `${BASE}/api/courses/${courseId}/quizzes`,
+    { withCredentials: true }
+  );
+  return response.data;
+};
+
+// Create new quiz for a course
+export const createQuizForCourse = async (courseId: string) => {
+  const response = await axios.post(
+    `${BASE}/api/courses/${courseId}/quizzes`,
+    {},
+    { withCredentials: true }
+  );
+  return response.data;
+};
+
+// Get a quiz by ID
+export const findQuizById = async (quizId: string) => {
+  const response = await axios.get(
+    `${BASE}/api/quizzes/${quizId}`,
+    { withCredentials: true }
+  );
+  return response.data;
+};
+
+export const updateQuiz = async (quizId: string, quiz: Quiz): Promise<Quiz> => {
+  const response = await axios.put(
+    `${BASE}/api/quizzes/${quizId}`,
+    quiz,
+    { withCredentials: true }
+  );
+  return response.data as Quiz;
+};
+
+// Delete a quiz
+export const deleteQuiz = async (quizId: string) => {
+  const response = await axios.delete(
+    `${BASE}/api/quizzes/${quizId}`,
+    { withCredentials: true }
+  );
+  return response.data;
+};
+
+export const saveQuizQuestions = async (
+  quizId: string,
+  questions: Question[]
+): Promise<Quiz> => {
+  const response = await axios.put(
+    `${BASE}/api/quizzes/${quizId}/questions`,
+    { questions },
+    { withCredentials: true }
+  );
+  return response.data as Quiz;
+};
+
+export const submitQuizAttempt = async (
+  quizId: string,
+  answers: Answer[]
+) => {
+  const response = await axios.post(
+    `${BASE}/api/quizzes/${quizId}/attempts`,
+    { answers },
+    { withCredentials: true }
+  );
+  return response.data;
+};
+
+// Get last attempt of current user
+export const findMyLastAttempt = async (quizId: string) => {
+  const response = await axios.get(
+    `${BASE}/api/quizzes/${quizId}/attempts/me`,
+    { withCredentials: true }
+  );
+  return response.data;
+};
+
   
   
