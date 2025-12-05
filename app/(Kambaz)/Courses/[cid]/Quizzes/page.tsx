@@ -55,24 +55,23 @@ export default function QuizList() {
     dispatch(setQuizzes(data));
   }, [cid, dispatch]);
 
-
   useEffect(() => {
-    if (currentUser?.role === "STUDENT") {
-      (async () => {
-        const updated = [...quizzes];
-        for (const quiz of updated) {
+    const load = async () => {
+      const data: Quiz[] = await client.findQuizzesForCourse(cid as string);
+  
+      // If student, add lastScore to each quiz BEFORE dispatching
+      if (currentUser?.role === "STUDENT") {
+        for (const quiz of data) {
           const attempt = await client.findMyLastAttempt(quiz._id);
           if (attempt) quiz.lastScore = attempt.score;
         }
-        dispatch(setQuizzes(updated));
-      })();
-    }
-  }, [currentUser?.role, quizzes, dispatch]);
-
-
-  useEffect(() => {
-    loadQuizzes();
-  }, [loadQuizzes]);
+      }
+  
+      dispatch(setQuizzes(data)); // store final list together
+    };
+  
+    load();
+  }, [cid, currentUser?.role, dispatch]);  
 
   /* ---------------------------
        Add new quiz

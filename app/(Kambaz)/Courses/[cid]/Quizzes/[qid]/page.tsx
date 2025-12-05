@@ -89,30 +89,60 @@ export default function QuizDetails() {
 </div>
 
 
-        <div className="mt-4">
-          <strong>Quiz Type:</strong> {currentQuiz.quizType}
-        </div>
-        <div>
-          <strong>Points:</strong> {currentQuiz.points}
-        </div>
-        <div>
-          <strong>Assignment Group:</strong> {currentQuiz.assignmentGroup}
-          <div>
+<div className="mt-4">
+  <strong>Quiz Type:</strong> {currentQuiz.quizType}
+</div>
+
+<div>
+  <strong>Points:</strong> {currentQuiz.points}
+</div>
+
+<div>
+  <strong>Assignment Group:</strong> {currentQuiz.assignmentGroup}
+</div>
+
+<div>
   <strong>Shuffle Answers:</strong> {currentQuiz.shuffleAnswers ? "Yes" : "No"}
+</div>
+
+<div>
+  <strong>Time Limit:</strong> {currentQuiz.timeLimit} minutes
+</div>
+
+<div>
+  <strong>Multiple Attempts:</strong> {currentQuiz.multipleAttempts ? "Yes" : "No"}
+</div>
+
+{currentQuiz.multipleAttempts && (
+  <div>
+    <strong>How Many Attempts:</strong> {currentQuiz.howManyAttempts}
+  </div>
+)}
+
+<div>
+  <strong>Show Correct Answers:</strong>{" "}
+  {currentQuiz.showCorrectAnswers ? "Yes" : "No"}
 </div>
 
 <div>
   <strong>Access Code:</strong> {currentQuiz.accessCode || "—"}
 </div>
 
-        </div>
-        <div>
-          <strong>Time Limit:</strong> {currentQuiz.timeLimit} minutes
-        </div>
-        <div>
-          <strong>Multiple Attempts:</strong>{" "}
-          {currentQuiz.multipleAttempts ? "Yes" : "No"}
-        </div>
+<div>
+  <strong>One Question at a Time:</strong>{" "}
+  {currentQuiz.oneQuestionAtATime ? "Yes" : "No"}
+</div>
+
+<div>
+  <strong>Webcam Required:</strong>{" "}
+  {currentQuiz.webcamRequired ? "Yes" : "No"}
+</div>
+
+<div>
+  <strong>Lock Questions After Answering:</strong>{" "}
+  {currentQuiz.lockAfterAnswering ? "Yes" : "No"}
+</div>
+
 
         {/* Dates */}
         <div className="mt-3">

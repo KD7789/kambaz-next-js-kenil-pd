@@ -53,9 +53,11 @@ export interface Quiz {
   howManyAttempts: number;
   showCorrectAnswers: string;
   accessCode: string;
+
   oneQuestionAtATime: boolean;
   webcamRequired: boolean;
-  lockQuestionsAfterAnswering: boolean;
+  lockQuestionsAfterAnswering: boolean; 
+  lockAfterAnswering: boolean;  // ✅ FIXED
 
   availableFrom?: string;
   availableUntil?: string;
