@@ -13,36 +13,21 @@ import {
   deleteQuizInStore,
 } from "./reducer";
 
-import * as client from "../../client"; // API client
-
+import * as client from "../../client";
 import { Button } from "react-bootstrap";
 import { FaPlus, FaEllipsisV } from "react-icons/fa";
 
 /* -------------------------------------------------
-   Strong Types — No `any`
+   TYPES
 --------------------------------------------------- */
-
-interface MCQChoice {
-  _id: string;
-  text: string;
-  isCorrect: boolean;
-}
-
-interface Question {
-  _id: string;
-  type: "MCQ" | "TRUE_FALSE" | "FILL_IN_BLANK";
-  points: number;
-  text: string;
-  title: string;
-  choices?: MCQChoice[];
-  correctBoolean?: boolean;
-  acceptableAnswers?: string[];
-}
 
 interface QuizMenuProps {
   quiz: Quiz;
   onEdit: () => void;
   onDelete: () => void;
+  onCopy: (quiz: Quiz) => void;
+  onSort: () => void;
+  onTogglePublish: (quiz: Quiz) => void;
 }
 
 /* -------------------------------------------------
@@ -54,34 +39,36 @@ export default function QuizList() {
   const dispatch = useDispatch();
   const router = useRouter();
 
-  const { quizzes } = useSelector(
-    (state: RootState) => state.quizzesReducer
-  );
+  const { quizzes } = useSelector((state: RootState) => state.quizzesReducer);
 
   const currentUser = useSelector(
     (state: RootState) =>
       state.accountReducer.currentUser as { role?: string } | null
-  );  
+  );
 
   const isFaculty = currentUser?.role === "FACULTY";
+  const [sortMethod, setSortMethod] =
+    useState<"NAME" | "DUE" | "AVAILABLE" | null>(null);
 
-  /* ---------------------------
-       Load quizzes (useCallback fixes ESLint)
-  --------------------------- */
   const loadQuizzes = useCallback(async () => {
     const data: Quiz[] = await client.findQuizzesForCourse(cid as string);
-
-// If student, load last attempt score
-if (currentUser?.role === "STUDENT") {
-  for (const quiz of data) {
-    const attempt = await client.findMyLastAttempt(quiz._id);
-    if (attempt) quiz.lastScore = attempt.score;
-  }
-}
-
-dispatch(setQuizzes(data));
-
+    dispatch(setQuizzes(data));
   }, [cid, dispatch]);
+
+
+  useEffect(() => {
+    if (currentUser?.role === "STUDENT") {
+      (async () => {
+        const updated = [...quizzes];
+        for (const quiz of updated) {
+          const attempt = await client.findMyLastAttempt(quiz._id);
+          if (attempt) quiz.lastScore = attempt.score;
+        }
+        dispatch(setQuizzes(updated));
+      })();
+    }
+  }, [currentUser?.role, quizzes, dispatch]);
+
 
   useEffect(() => {
     loadQuizzes();
@@ -136,8 +123,39 @@ dispatch(setQuizzes(data));
   }
 
   /* ---------------------------
-       MAIN RENDER
+       Sorting
   --------------------------- */
+  
+
+  const sortedQuizzes = [...quizzes].sort((a, b) => {
+    if (!sortMethod) return 0;
+    if (sortMethod === "NAME") return a.title.localeCompare(b.title);
+    if (sortMethod === "DUE")
+      return new Date(a.dueDate || 0).getTime() - new Date(b.dueDate || 0).getTime();
+    if (sortMethod === "AVAILABLE")
+      return new Date(a.availableFrom || 0).getTime() -
+             new Date(b.availableFrom || 0).getTime();
+    return 0;
+  });
+
+  const handleCopyQuiz = async (quiz: Quiz) => {
+    const newQuiz = await client.copyQuiz(quiz._id); // implement later
+    dispatch(addQuiz(newQuiz));
+  };
+
+  const handleSort = () => {
+    const choice = prompt("Sort by: name | due | available?");
+    if (!choice) return;
+
+    if (choice === "name") setSortMethod("NAME");
+    else if (choice === "due") setSortMethod("DUE");
+    else if (choice === "available") setSortMethod("AVAILABLE");
+  };
+
+  /* ---------------------------
+       RENDER
+  --------------------------- */
+
   return (
     <div style={{ padding: "20px" }}>
       <div className="d-flex justify-content-between align-items-center mb-3">
@@ -151,54 +169,50 @@ dispatch(setQuizzes(data));
       </div>
 
       <ul className="list-group">
-        {quizzes.map((quiz) => (
+        {sortedQuizzes.map((quiz) => (
           <li
             key={quiz._id}
             className="list-group-item d-flex justify-content-between align-items-start"
           >
             <div>
-              {/* Quiz Title */}
               <div
                 style={{ fontSize: "18px", fontWeight: 500, cursor: "pointer" }}
-                onClick={() =>
-                  router.push(`/Courses/${cid}/Quizzes/${quiz._id}`)
-                }
+                onClick={() => router.push(`/Courses/${cid}/Quizzes/${quiz._id}`)}
               >
                 {quiz.title}
               </div>
 
-              {/* Metadata */}
               <div className="text-muted" style={{ fontSize: "14px" }}>
-  {quiz.published ? "Published" : "Unpublished"} 
-  • {getAvailability(quiz)}
-  • {quiz.points} pts 
-  • {(quiz.questions || []).length} questions
+  {quiz.published ? "Published" : "Unpublished"} •{" "}
+  {getAvailability(quiz)} •{" "}
 
-  {/* Student score */}
+  {/* DUE DATE */}
+  {quiz.dueDate ? (
+    <>Due: {new Date(quiz.dueDate).toLocaleDateString()} • </>
+  ) : (
+    <>No due date • </>
+  )}
+
+  {quiz.points} pts • {(quiz.questions || []).length} questions
+
+  {/* Student last score */}
   {!isFaculty && quiz.lastScore != null && (
     <> • Score: {quiz.lastScore} / {quiz.points}</>
   )}
-</div>
+  </div>
+</div> 
 
-            </div>
 
-            {/* Faculty-only icons */}
             <div className="d-flex align-items-center">
-              {/* Publish toggle */}
               {isFaculty && (
                 <span
                   onClick={() => togglePublish(quiz)}
-                  style={{
-                    cursor: "pointer",
-                    marginRight: "10px",
-                    fontSize: "20px",
-                  }}
+                  style={{ cursor: "pointer", marginRight: "10px", fontSize: "20px" }}
                 >
                   {quiz.published ? "✅" : "🚫"}
                 </span>
               )}
 
-              {/* Context menu */}
               {isFaculty && (
                 <QuizMenu
                   quiz={quiz}
@@ -206,6 +220,9 @@ dispatch(setQuizzes(data));
                     router.push(`/Courses/${cid}/Quizzes/${quiz._id}/Edit`)
                   }
                   onDelete={() => handleDelete(quiz._id)}
+                  onCopy={() => handleCopyQuiz(quiz)}
+                  onSort={handleSort}
+                  onTogglePublish={() => togglePublish(quiz)}
                 />
               )}
             </div>
@@ -216,35 +233,39 @@ dispatch(setQuizzes(data));
   );
 }
 
-/* ---------------------------
-   Availability Helper
---------------------------- */
+/* -------------------------------------------------
+   AVAILABILITY HELPER
+--------------------------------------------------- */
+
 function getAvailability(quiz: Quiz): string {
   const now = new Date();
   const from = quiz.availableFrom ? new Date(quiz.availableFrom) : null;
   const until = quiz.availableUntil ? new Date(quiz.availableUntil) : null;
 
-  if (from && now < from) {
-    return `Not available until ${from.toLocaleDateString()}`;
-  }
-  if (until && now > until) {
-    return "Closed";
-  }
+  if (from && now < from) return `Not available until ${from.toLocaleDateString()}`;
+  if (until && now > until) return "Closed";
   return "Available";
 }
 
-/* ==========================================
-   Quiz Menu Component (Edit/Delete)
-========================================== */
+/* -------------------------------------------------
+   QUIZ MENU COMPONENT
+--------------------------------------------------- */
 
-function QuizMenu({ quiz, onEdit, onDelete }: QuizMenuProps) {
+function QuizMenu({
+  quiz,
+  onEdit,
+  onDelete,
+  onCopy,
+  onSort,
+  onTogglePublish,
+}: QuizMenuProps) {
   const [show, setShow] = useState(false);
 
   return (
     <div className="position-relative">
       <FaEllipsisV
-        style={{ cursor: "pointer" }}
         onClick={() => setShow((prev) => !prev)}
+        style={{ cursor: "pointer" }}
       />
 
       {show && (
@@ -259,26 +280,27 @@ function QuizMenu({ quiz, onEdit, onDelete }: QuizMenuProps) {
             zIndex: 10,
           }}
         >
-          <div
-            className="dropdown-item"
-            style={{ cursor: "pointer" }}
-            onClick={() => {
-              setShow(false);
-              onEdit();
-            }}
-          >
+          <div className="dropdown-item" onClick={() => { setShow(false); onEdit(); }}>
             Edit
+          </div>
+
+          <div className="dropdown-item" onClick={() => { setShow(false); onTogglePublish(quiz); }}>
+            {quiz.published ? "Unpublish" : "Publish"}
           </div>
 
           <div
             className="dropdown-item text-danger"
-            style={{ cursor: "pointer" }}
-            onClick={() => {
-              setShow(false);
-              onDelete();
-            }}
+            onClick={() => { setShow(false); onDelete(); }}
           >
             Delete
+          </div>
+
+          <div className="dropdown-item" onClick={() => { setShow(false); onCopy(quiz); }}>
+            Copy
+          </div>
+
+          <div className="dropdown-item" onClick={() => { setShow(false); onSort(); }}>
+            Sort
           </div>
         </div>
       )}

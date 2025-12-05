@@ -276,6 +276,14 @@ export const submitQuizAttempt = async (
   );
 };
 
+export const copyQuiz = async (quizId: string) => {
+  const response = await fetch(`${QUIZZES_API}/quizzes/${quizId}/copy`, {
+    method: "POST",
+    credentials: "include",
+  });
+  return response.json();
+};
+
 
 export const findMyLastAttempt = async (quizId: string) => {
   const { data } = await axiosWithCredentials.get(
