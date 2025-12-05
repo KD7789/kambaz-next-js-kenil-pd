@@ -277,11 +277,10 @@ export const submitQuizAttempt = async (
 };
 
 export const copyQuiz = async (quizId: string) => {
-  const response = await fetch(`${QUIZZES_API}/quizzes/${quizId}/copy`, {
-    method: "POST",
-    credentials: "include",
-  });
-  return response.json();
+  const { data } = await axiosWithCredentials.post(
+    `${QUIZZES_API}/${quizId}/copy`
+  );
+  return data;
 };
 
 

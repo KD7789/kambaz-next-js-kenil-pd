@@ -56,8 +56,7 @@ export interface Quiz {
 
   oneQuestionAtATime: boolean;
   webcamRequired: boolean;
-  lockQuestionsAfterAnswering: boolean; 
-  lockAfterAnswering: boolean;  // ✅ FIXED
+  lockQuestionsAfterAnswering: boolean;
 
   availableFrom?: string;
   availableUntil?: string;

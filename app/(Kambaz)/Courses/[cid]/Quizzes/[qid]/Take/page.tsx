@@ -22,14 +22,11 @@ export default function TakeQuiz() {
   const dispatch = useDispatch();
   const router = useRouter();
 
-  const quiz = useSelector(
-    (state: RootState) => state.quizzesReducer.currentQuiz
-  );
-  const myAttempts = useSelector(
-    (state: RootState) => state.quizzesReducer.myAttempts[qid]
-  );
+  const quiz = useSelector((state: RootState) => state.quizzesReducer.currentQuiz);
+  const myAttempts = useSelector((state: RootState) => state.quizzesReducer.myAttempts[qid]);
 
   const [answers, setAnswers] = useState<AnswerMap>({});
+  const [lockedAnswers, setLockedAnswers] = useState<Record<string, boolean>>({});
   const [accessCodeInput, setAccessCodeInput] = useState("");
   const [accessGranted, setAccessGranted] = useState(false);
 
@@ -52,20 +49,19 @@ export default function TakeQuiz() {
       initial[question._id] = "";
     });
     setAnswers(initial);
+    setLockedAnswers({}); // reset lock state when loading quiz
   }, [dispatch, qid]);
 
   useEffect(() => {
     loadQuiz();
   }, [loadQuiz]);
 
-  if (!quiz) {
-    return <div style={{ padding: "20px" }}>Loading...</div>;
-  }
+  if (!quiz) return <div style={{ padding: "20px" }}>Loading...</div>;
 
   const questions = quiz.questions || [];
 
   /* -----------------------------------------
-     1️⃣ Check Availability
+     1️⃣ Availability Checks
   --------------------------------------------*/
   const now = new Date();
   const from = quiz.availableFrom ? new Date(quiz.availableFrom) : null;
@@ -76,29 +72,17 @@ export default function TakeQuiz() {
   }
 
   if (from && now < from) {
-    return (
-      <div className="p-4 alert alert-info">
-        Quiz will open on {from.toLocaleString()}.
-      </div>
-    );
+    return <div className="p-4 alert alert-info">Quiz will open on {from.toLocaleString()}.</div>;
   }
 
   if (until && now > until) {
-    return (
-      <div className="p-4 alert alert-danger">
-        This quiz is closed.
-      </div>
-    );
+    return <div className="p-4 alert alert-danger">This quiz is closed.</div>;
   }
 
   /* -----------------------------------------
-     2️⃣ Check attempt limits
+     2️⃣ Attempt Limit
   --------------------------------------------*/
-  if (
-    quiz.multipleAttempts &&
-    myAttempts &&
-    myAttempts.attemptNumber >= quiz.howManyAttempts
-  ) {
+  if (quiz.multipleAttempts && myAttempts && myAttempts.attemptNumber >= quiz.howManyAttempts) {
     return (
       <div className="p-4 alert alert-danger">
         You have used all allowed attempts for this quiz.
@@ -139,6 +123,10 @@ export default function TakeQuiz() {
      Update per-question answer
   --------------------------------------------*/
   const handleChange = (questionId: string, value: string) => {
+    // 🚫 Prevent changing locked questions
+    if (quiz.lockQuestionsAfterAnswering && lockedAnswers[questionId]) {
+      return;
+    }
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
@@ -152,25 +140,17 @@ export default function TakeQuiz() {
       const ans = answers[q._id] || "";
 
       if (q.type === "MCQ") {
-        if (q.choices?.find((c) => c._id === ans)?.isCorrect) {
-          score += q.points;
-        }
+        if (q.choices?.find((c) => c._id === ans)?.isCorrect) score += q.points;
       }
 
       if (q.type === "TRUE_FALSE") {
-        if (String(q.correctBoolean) === ans) {
-          score += q.points;
-        }
+        if (String(q.correctBoolean) === ans) score += q.points;
       }
 
       if (q.type === "FILL_IN_BLANK") {
-        if (
-          q.acceptableAnswers?.some(
-            (a) => a.trim().toLowerCase() === ans.trim().toLowerCase()
-          )
-        ) {
-          score += q.points;
-        }
+        if (q.acceptableAnswers?.some(
+          (a) => a.trim().toLowerCase() === ans.trim().toLowerCase()
+        )) score += q.points;
       }
     }
 
@@ -181,42 +161,46 @@ export default function TakeQuiz() {
      Submit attempt
   --------------------------------------------*/
   const submit = async () => {
-    // Convert AnswerMap → Answer[]
-    const answerArray = Object.entries(answers).map(
-      ([questionId, answerText]) => ({
-        questionId,
-        answerText,
-      })
-    );
-  
+    const answerArray = Object.entries(answers).map(([questionId, answerText]) => ({
+      questionId,
+      answerText,
+    }));
+
     const score = computeScore();
-  
+
     try {
       await client.submitQuizAttempt(qid, {
         answers: answerArray,
         score,
         accessCode: accessCodeInput || undefined,
       });
-  
       router.push(`/Courses/${cid}/Quizzes/${qid}/Results`);
     } catch (err) {
       console.error("Submit failed:", err);
       alert("Submission failed.");
     }
   };
-  
-  
-  
-
-   
 
   /* -----------------------------------------
-     One-question-at-a-time navigation
+     Next button logic with locking
   --------------------------------------------*/
-  const q = quiz.oneQuestionAtATime ? questions[index] : null;
+  const goNext = () => {
+    const currentQuestion = questions[index];
+    if (!currentQuestion) return;
+
+    // ✅ Lock the answer when moving forward
+    if (quiz.lockQuestionsAfterAnswering) {
+      setLockedAnswers((prev) => ({
+        ...prev,
+        [currentQuestion._id]: true,
+      }));
+    }
+
+    setIndex(index + 1);
+  };
 
   /* -----------------------------------------
-     Render single question (for both modes)
+     Render single question
   --------------------------------------------*/
   const renderQuestion = (q: Question) => {
     const value = answers[q._id] || "";
@@ -279,58 +263,53 @@ export default function TakeQuiz() {
     <div style={{ padding: "20px" }}>
       <h3>{quiz.title}</h3>
 
+      {/* Multi-question-at-once */}
       {!quiz.oneQuestionAtATime && (
         <>
           {questions.map((q, idx) => (
-            <div
-              key={q._id}
-              className="border rounded p-3 mb-4"
-              style={{ background: "#fafafa" }}
-            >
+            <div key={q._id} className="border rounded p-3 mb-4" style={{ background: "#fafafa" }}>
               <h5>
                 Question {idx + 1} ({q.points} pts)
               </h5>
-
               <div dangerouslySetInnerHTML={{ __html: q.text }} />
               {renderQuestion(q)}
             </div>
           ))}
+
+          <Button variant="danger" onClick={submit}>Submit Quiz</Button>
         </>
       )}
 
-      {/* One Question at a Time Mode */}
-      {quiz.oneQuestionAtATime && q && (
+      {/* One Question At A Time */}
+      {quiz.oneQuestionAtATime && questions[index] && (
         <div className="border rounded p-3 mb-4" style={{ background: "#fafafa" }}>
           <h5>
-            Question {index + 1} of {questions.length} ({q.points} pts)
+            Question {index + 1} of {questions.length} ({questions[index].points} pts)
           </h5>
 
-          <div dangerouslySetInnerHTML={{ __html: q.text }} />
-          {renderQuestion(q)}
+          <div dangerouslySetInnerHTML={{ __html: questions[index].text }} />
+          {renderQuestion(questions[index])}
 
           <div className="d-flex justify-content-between mt-3">
-            <Button
-              disabled={index === 0}
-              onClick={() => setIndex(index - 1)}
-            >
-              Previous
-            </Button>
 
-            {index < questions.length - 1 ? (
-              <Button onClick={() => setIndex(index + 1)}>Next</Button>
-            ) : (
-              <Button variant="danger" onClick={submit}>
-                Submit Quiz
+            {/* Previous allowed only when NOT locked */}
+            {!quiz.lockQuestionsAfterAnswering && (
+              <Button disabled={index === 0} onClick={() => setIndex(index - 1)}>
+                Previous
               </Button>
             )}
+
+            <div className="ms-auto">
+              {index < questions.length - 1 ? (
+                <Button onClick={goNext}>Next</Button>
+              ) : (
+                <Button variant="danger" onClick={submit}>
+                  Submit Quiz
+                </Button>
+              )}
+            </div>
           </div>
         </div>
-      )}
-
-      {!quiz.oneQuestionAtATime && (
-        <Button variant="danger" onClick={submit}>
-          Submit Quiz
-        </Button>
       )}
     </div>
   );

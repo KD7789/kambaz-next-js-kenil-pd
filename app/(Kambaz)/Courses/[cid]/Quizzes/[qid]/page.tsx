@@ -120,8 +120,7 @@ export default function QuizDetails() {
 )}
 
 <div>
-  <strong>Show Correct Answers:</strong>{" "}
-  {currentQuiz.showCorrectAnswers ? "Yes" : "No"}
+<strong>Show Correct Answers:</strong> {currentQuiz.showCorrectAnswers}
 </div>
 
 <div>
@@ -140,7 +139,7 @@ export default function QuizDetails() {
 
 <div>
   <strong>Lock Questions After Answering:</strong>{" "}
-  {currentQuiz.lockAfterAnswering ? "Yes" : "No"}
+  {currentQuiz.lockQuestionsAfterAnswering ? "Yes" : "No"}
 </div>
 
 
@@ -203,11 +202,14 @@ return (
       </div>
 
       {lastAttempt && (
-        <div className="mt-2">
-          <strong>Your Last Score:</strong> {lastAttempt.score} /{" "}
-          {currentQuiz.points}
-        </div>
-      )}
+  <div className="mt-2">
+    <strong>Your Last Score:</strong> {lastAttempt.score} / {currentQuiz.points}
+    <br />
+    <strong>Last Attempt:</strong>{" "}
+    {new Date(lastAttempt.submittedAt).toLocaleString()}
+  </div>
+)}
+
     </div>
 
     {/* Unpublished warning */}

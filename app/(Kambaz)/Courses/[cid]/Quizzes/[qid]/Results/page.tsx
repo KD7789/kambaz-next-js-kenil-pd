@@ -88,9 +88,9 @@ export default function QuizResults() {
      Determine if student is allowed to see correct answers
   --------------------------------------------------- */
   function canShowCorrectAnswers(): boolean {
-    if (!quiz) return false; // <-- TS refinement
+    if (!quiz) return false;
   
-    const mode = quiz.showCorrectAnswers || "ALWAYS";
+    const mode = quiz.showCorrectAnswers || "IMMEDIATELY";
   
     if (mode === "NEVER") return false;
   
@@ -99,8 +99,9 @@ export default function QuizResults() {
       return new Date() > new Date(quiz.dueDate);
     }
   
-    return true; // ALWAYS
-  }
+    // IMMEDIATELY or any other value → show
+    return true;
+  }  
   
 
   const allowCorrectAnswers = canShowCorrectAnswers();
