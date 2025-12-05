@@ -8,14 +8,20 @@ import { RootState } from "../../../../../store";
 import { setCurrentQuiz, updateQuizInStore } from "../../reducer";
 import * as client from "../../../../client";
 import { Button, Form } from "react-bootstrap";
-import type { Question } from "../../types";
+import dynamic from "next/dynamic";
+
+const SimpleMDE = dynamic(() => import("react-simplemde-editor"), {
+  ssr: false,
+});
+import "easymde/dist/easymde.min.css";
+
+
+
 import type { Quiz } from "../../reducer";
 
-
 /* -----------------------------------------
-   Types
+   Component
 --------------------------------------------*/
-
 export default function QuizEditor() {
   const { cid, qid } = useParams<{ cid: string; qid: string }>();
   const dispatch = useDispatch();
@@ -28,7 +34,7 @@ export default function QuizEditor() {
   const [localQuiz, setLocalQuiz] = useState<Quiz | null>(null);
 
   /* -----------------------------------------
-     Load quiz (useCallback to fix ESLint)
+     Load quiz
   --------------------------------------------*/
   const loadQuiz = useCallback(async () => {
     const q: Quiz = await client.findQuizById(qid);
@@ -37,12 +43,9 @@ export default function QuizEditor() {
   }, [dispatch, qid]);
 
   useEffect(() => {
-    if (storedQuiz) {
-      setLocalQuiz(storedQuiz);
-    } else {
-      loadQuiz();
-    }
-  }, [storedQuiz, loadQuiz]);  
+    if (storedQuiz) setLocalQuiz(storedQuiz);
+    else loadQuiz();
+  }, [storedQuiz, loadQuiz]);
 
   if (!localQuiz) {
     return <div style={{ padding: "20px" }}>Loading...</div>;
@@ -54,6 +57,15 @@ export default function QuizEditor() {
   const updateField = <K extends keyof Quiz>(field: K, value: Quiz[K]) => {
     setLocalQuiz((prev) => (prev ? { ...prev, [field]: value } : prev));
   };
+
+  function toDateInputValue(d: string | Date | null | undefined): string {
+    if (!d) return "";
+    try {
+      return new Date(d).toISOString().split("T")[0];
+    } catch {
+      return "";
+    }
+  }  
 
   /* -----------------------------------------
      Save actions
@@ -71,19 +83,12 @@ export default function QuizEditor() {
     router.push(`/Courses/${cid}/Quizzes`);
   };
 
-  const cancel = () => {
-    router.push(`/Courses/${cid}/Quizzes`);
-  };
-
-  /* -----------------------------------------
-     Tabs navigation
-  --------------------------------------------*/
-  const goToQuestions = () => {
+  const cancel = () => router.push(`/Courses/${cid}/Quizzes`);
+  const goToQuestions = () =>
     router.push(`/Courses/${cid}/Quizzes/${qid}/Questions`);
-  };
 
   /* -----------------------------------------
-     Render Page
+     Render
   --------------------------------------------*/
   return (
     <div style={{ padding: "20px" }}>
@@ -110,16 +115,26 @@ export default function QuizEditor() {
           />
         </Form.Group>
 
-        {/* Description */}
+        {/* Description (WYSIWYG) */}
+        {/* Description (WYSIWYG) */}
         <Form.Group className="mb-3">
-          <Form.Label>Description</Form.Label>
-          <Form.Control
-            as="textarea"
-            rows={3}
-            value={localQuiz.description || ""}
-            onChange={(e) => updateField("description", e.target.value)}
-          />
-        </Form.Group>
+  <Form.Label>Description</Form.Label>
+  <SimpleMDE
+    value={localQuiz.description || ""}
+    onChange={(v) => updateField("description", v)}
+    options={{
+      spellChecker: false,
+      placeholder: "Enter quiz description...",
+    }}
+  />
+</Form.Group>
+
+
+
+        {/* Points (readonly) */}
+        <div className="mb-3">
+          <strong>Total Points:</strong> {localQuiz.points}
+        </div>
 
         {/* Quiz Type */}
         <Form.Group className="mb-3">
@@ -146,6 +161,20 @@ export default function QuizEditor() {
             <option value="EXAMS">Exams</option>
             <option value="ASSIGNMENTS">Assignments</option>
             <option value="PROJECT">Project</option>
+          </Form.Select>
+        </Form.Group>
+
+        {/* Shuffle Answers (Missing earlier) */}
+        <Form.Group className="mb-3">
+          <Form.Label>Shuffle Answers</Form.Label>
+          <Form.Select
+            value={localQuiz.shuffleAnswers ? "YES" : "NO"}
+            onChange={(e) =>
+              updateField("shuffleAnswers", e.target.value === "YES")
+            }
+          >
+            <option value="YES">Yes</option>
+            <option value="NO">No</option>
           </Form.Select>
         </Form.Group>
 
@@ -181,10 +210,7 @@ export default function QuizEditor() {
                 type="number"
                 value={localQuiz.howManyAttempts}
                 onChange={(e) =>
-                  updateField(
-                    "howManyAttempts",
-                    Number(e.target.value)
-                  )
+                  updateField("howManyAttempts", Number(e.target.value))
                 }
               />
             </div>
@@ -260,28 +286,28 @@ export default function QuizEditor() {
         <Form.Group className="mb-3">
           <Form.Label>Available From</Form.Label>
           <Form.Control
-            type="date"
-            value={localQuiz.availableFrom || ""}
-            onChange={(e) => updateField("availableFrom", e.target.value)}
-          />
+  type="date"
+  value={toDateInputValue(localQuiz.availableFrom)}
+  onChange={(e) => updateField("availableFrom", e.target.value)}
+/>
         </Form.Group>
 
         <Form.Group className="mb-3">
           <Form.Label>Available Until</Form.Label>
           <Form.Control
-            type="date"
-            value={localQuiz.availableUntil || ""}
-            onChange={(e) => updateField("availableUntil", e.target.value)}
-          />
+  type="date"
+  value={toDateInputValue(localQuiz.availableUntil)}
+  onChange={(e) => updateField("availableUntil", e.target.value)}
+/>
         </Form.Group>
 
         <Form.Group className="mb-3">
           <Form.Label>Due Date</Form.Label>
           <Form.Control
-            type="date"
-            value={localQuiz.dueDate || ""}
-            onChange={(e) => updateField("dueDate", e.target.value)}
-          />
+  type="date"
+  value={toDateInputValue(localQuiz.dueDate)}
+  onChange={(e) => updateField("dueDate", e.target.value)}
+/>
         </Form.Group>
 
         {/* BUTTONS */}

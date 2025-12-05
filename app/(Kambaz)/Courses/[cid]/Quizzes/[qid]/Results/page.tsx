@@ -7,12 +7,14 @@ import { RootState } from "../../../../../store";
 
 import { setCurrentQuiz, setMyAttempt } from "../../reducer";
 import * as client from "../../../../client";
+
 import type { Quiz, Attempt } from "../../reducer";
+import type { Question } from "../../types";
 
 import { Button } from "react-bootstrap";
 
 /* -------------------------------------------------
-   Strong Types (No any)
+   Helper Types
 --------------------------------------------------- */
 
 interface MCQChoice {
@@ -21,21 +23,9 @@ interface MCQChoice {
   isCorrect: boolean;
 }
 
-interface Question {
-  _id: string;
-  type: "MCQ" | "TRUE_FALSE" | "FILL_IN_BLANK";
-  title: string;
-  points: number;
-  text: string;
-  choices?: MCQChoice[];
-  correctBoolean?: boolean;
-  acceptableAnswers?: string[];
-}
-
-interface Answer {
-  questionId: string;
-  answerText: string;
-}
+/* -------------------------------------------------
+   Component
+--------------------------------------------------- */
 
 export default function QuizResults() {
   const { cid, qid } = useParams<{ cid: string; qid: string }>();
@@ -45,9 +35,14 @@ export default function QuizResults() {
   const quiz = useSelector(
     (state: RootState) => state.quizzesReducer.currentQuiz
   );
+
   const attempts = useSelector(
     (state: RootState) => state.quizzesReducer.myAttempts
   );
+
+  const user = useSelector(
+    (state: RootState) => state.accountReducer.currentUser
+  ) as { role: string } | null;
 
   const lastAttempt: Attempt | undefined = attempts[qid];
 
@@ -66,6 +61,22 @@ export default function QuizResults() {
     loadData();
   }, [loadData]);
 
+  /* -------------------------------------------------
+     Faculty should not access results screen
+  --------------------------------------------------- */
+  if (user?.role === "FACULTY") {
+    return (
+      <div style={{ padding: "20px" }}>
+        <h4>Faculty cannot view student results. Use Preview mode instead.</h4>
+        <Button
+          onClick={() => router.push(`/Courses/${cid}/Quizzes/${qid}/Preview`)}
+        >
+          Go to Preview
+        </Button>
+      </div>
+    );
+  }
+
   if (!quiz || !lastAttempt) {
     return <div style={{ padding: "20px" }}>Loading...</div>;
   }
@@ -74,12 +85,34 @@ export default function QuizResults() {
   const answerList = lastAttempt.answers || [];
 
   /* -------------------------------------------------
-     Is Correct?
+     Determine if student is allowed to see correct answers
+  --------------------------------------------------- */
+  function canShowCorrectAnswers(): boolean {
+    if (!quiz) return false; // <-- TS refinement
+  
+    const mode = quiz.showCorrectAnswers || "ALWAYS";
+  
+    if (mode === "NEVER") return false;
+  
+    if (mode === "AFTER_DUE_DATE") {
+      if (!quiz.dueDate) return false;
+      return new Date() > new Date(quiz.dueDate);
+    }
+  
+    return true; // ALWAYS
+  }
+  
+
+  const allowCorrectAnswers = canShowCorrectAnswers();
+
+  /* -------------------------------------------------
+     Is the answer correct?
   --------------------------------------------------- */
   const isCorrect = (q: Question, studentAnswer: string): boolean => {
+    if (!allowCorrectAnswers) return false;
+
     if (q.type === "MCQ") {
-      const choice = q.choices?.find((c) => c._id === studentAnswer);
-      return Boolean(choice?.isCorrect);
+      return Boolean(q.choices?.find((c) => c._id === studentAnswer)?.isCorrect);
     }
 
     if (q.type === "TRUE_FALSE") {
@@ -109,42 +142,73 @@ export default function QuizResults() {
         className="p-2 mt-3"
         style={{
           borderRadius: "5px",
-          background: correct ? "#e6ffed" : "#ffe6e6",
-          border: correct ? "1px solid #28a745" : "1px solid #dc3545",
+          background: allowCorrectAnswers
+            ? correct
+              ? "#e6ffed"
+              : "#ffe6e6"
+            : "#f2f2f2",
+          border: allowCorrectAnswers
+            ? correct
+              ? "1px solid #28a745"
+              : "1px solid #dc3545"
+            : "1px solid #bbb",
         }}
       >
-        {/* CORRECT / INCORRECT TEXT */}
-        <strong style={{ color: correct ? "#28a745" : "#dc3545" }}>
-          {correct ? "✔ Correct" : "✘ Incorrect"}
+        {/* Correctness title */}
+        <strong
+          style={{
+            color: allowCorrectAnswers
+              ? correct
+                ? "#28a745"
+                : "#dc3545"
+              : "#888",
+          }}
+        >
+          {allowCorrectAnswers
+            ? correct
+              ? "✔ Correct"
+              : "✘ Incorrect"
+            : "Answer Submitted"}
         </strong>
 
-        {/* MCQ */}
+        {/* Always show student's answer */}
         {q.type === "MCQ" && (
           <div style={{ marginTop: "5px" }}>
             <b>Your answer:</b>{" "}
             {q.choices?.find((c) => c._id === studentAnswer)?.text ||
               "(No answer)"}
-            <br />
-            <b>Correct answer:</b>{" "}
-            {q.choices?.find((c) => c.isCorrect)?.text}
+            {allowCorrectAnswers && (
+              <>
+                <br />
+                <b>Correct answer:</b>{" "}
+                {q.choices?.find((c) => c.isCorrect)?.text}
+              </>
+            )}
           </div>
         )}
 
-        {/* TRUE / FALSE */}
         {q.type === "TRUE_FALSE" && (
           <div style={{ marginTop: "5px" }}>
             <b>Your answer:</b> {studentAnswer}
-            <br />
-            <b>Correct answer:</b> {String(q.correctBoolean)}
+            {allowCorrectAnswers && (
+              <>
+                <br />
+                <b>Correct answer:</b> {String(q.correctBoolean)}
+              </>
+            )}
           </div>
         )}
 
-        {/* FILL IN THE BLANK */}
         {q.type === "FILL_IN_BLANK" && (
           <div style={{ marginTop: "5px" }}>
             <b>Your answer:</b> {studentAnswer || "(No answer)"}
-            <br />
-            <b>Acceptable answers:</b> {q.acceptableAnswers?.join(", ")}
+            {allowCorrectAnswers && (
+              <>
+                <br />
+                <b>Acceptable answers:</b>{" "}
+                {q.acceptableAnswers?.join(", ")}
+              </>
+            )}
           </div>
         )}
       </div>
@@ -162,11 +226,16 @@ export default function QuizResults() {
         Score: <strong>{lastAttempt.score}</strong> / {quiz.points}
       </h5>
 
+      <p className="text-muted">
+        Attempt {lastAttempt.attemptNumber}{" "}
+        {quiz.multipleAttempts &&
+          `of ${quiz.howManyAttempts} allowed attempts`}
+      </p>
+
       {questions.map((q, idx) => {
         const answerObj = answerList.find(
           (a) => a.questionId === q._id
         );
-
         const studentAnswer = answerObj?.answerText || "";
 
         return (

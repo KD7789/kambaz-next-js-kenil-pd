@@ -11,16 +11,6 @@ import { Button, Form } from "react-bootstrap";
 import type { Quiz } from "../../reducer";
 import type { Question } from "../../types";
 
-/* -----------------------------------------
-   Types
---------------------------------------------*/
-
-interface MCQChoice {
-  _id: string;
-  text: string;
-  isCorrect: boolean;
-}
-
 /* Student-style answer map for preview */
 type AnswerMap = Record<string, string>;
 
@@ -35,8 +25,8 @@ export default function PreviewQuiz() {
 
   const user = useSelector(
     (state: RootState) =>
-      state.accountReducer.currentUser as { role: string } | null
-  );  
+      state.accountReducer.currentUser as { role?: string } | null
+  );
 
   const isFaculty = user?.role === "FACULTY";
 
@@ -51,11 +41,12 @@ export default function PreviewQuiz() {
     dispatch(setCurrentQuiz(data));
 
     const initial: AnswerMap = {};
-    data.questions?.forEach((q: Question) => {
+    (data.questions || []).forEach((q: Question) => {
       initial[q._id] = "";
     });
 
     setAnswers(initial);
+    setSubmitted(false);
   }, [dispatch, qid]);
 
   useEffect(() => {
@@ -75,20 +66,6 @@ export default function PreviewQuiz() {
   }
 
   const questions: Question[] = quiz.questions || [];
-
-  /* -----------------------------------------
-     Save answer locally
-  --------------------------------------------*/
-  const handleChange = (questionId: string, value: string) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: value }));
-  };
-
-  /* -----------------------------------------
-     Submit (does NOT hit backend)
-  --------------------------------------------*/
-  const submitPreview = () => {
-    setSubmitted(true);
-  };
 
   /* -----------------------------------------
      Evaluate correctness
@@ -111,6 +88,28 @@ export default function PreviewQuiz() {
     }
 
     return false;
+  };
+
+  const totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
+  const earnedPoints = submitted
+    ? questions.reduce((sum, q) => {
+        const ans = answers[q._id] || "";
+        return sum + (isCorrect(q, ans) ? q.points : 0);
+      }, 0)
+    : 0;
+
+  /* -----------------------------------------
+     Save answer locally
+  --------------------------------------------*/
+  const handleChange = (questionId: string, value: string) => {
+    setAnswers((prev) => ({ ...prev, [questionId]: value }));
+  };
+
+  /* -----------------------------------------
+     Submit (does NOT hit backend)
+  --------------------------------------------*/
+  const submitPreview = () => {
+    setSubmitted(true);
   };
 
   /* -----------------------------------------
@@ -138,7 +137,6 @@ export default function PreviewQuiz() {
             {correct ? "✔ Correct" : "✘ Incorrect"}
           </strong>
 
-          {/* MORE DETAIL PER TYPE */}
           {q.type === "MCQ" && (
             <div className="mt-1">
               <b>Your answer:</b>{" "}
@@ -152,7 +150,7 @@ export default function PreviewQuiz() {
 
           {q.type === "TRUE_FALSE" && (
             <div className="mt-1">
-              <b>Your answer:</b> {studentAnswer}
+              <b>Your answer:</b> {studentAnswer || "(No answer)"}
               <br />
               <b>Correct answer:</b> {String(q.correctBoolean)}
             </div>
@@ -234,6 +232,12 @@ export default function PreviewQuiz() {
       <p className="text-muted">
         This is how students will see the quiz. Your answers will NOT be saved.
       </p>
+
+      {submitted && (
+        <h5 className="mb-3">
+          Score: {earnedPoints} / {totalPoints}
+        </h5>
+      )}
 
       {questions.map((q, idx) => (
         <div

@@ -63,6 +63,7 @@ export interface Quiz {
 
   questions?: Question[];
   attempts?: Attempt[];
+  lastScore?: number;
 }
 
 /* ==========================================

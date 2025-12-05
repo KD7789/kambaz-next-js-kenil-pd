@@ -4,13 +4,9 @@ import type { Course } from "./reducer";
 import type { Enrollment } from "../Enrollments/reducer";
 import type { Quiz, Question, Answer } from "../Courses/[cid]/Quizzes/reducer";
 
-
-
 /* ---------------------------------------------------
    Types
 --------------------------------------------------- */
-
-
 export interface Module {
   _id: string;
   name: string;
@@ -23,8 +19,6 @@ export interface Lesson {
   _id: string;
   name: string;
 }
-
-
 
 export type CreateCourseInput = Omit<Course, "_id">;
 export type CreateModuleInput = Omit<Module, "_id">;
@@ -46,6 +40,7 @@ export const COURSES_API = `${HTTP_SERVER}/api/courses`;
 export const MODULES_API = `${HTTP_SERVER}/api/modules`;
 export const ASSIGNMENTS_API = `${HTTP_SERVER}/api/assignments`;
 export const ENROLLMENTS_API = `${HTTP_SERVER}/api/enrollments`;
+export const QUIZZES_API = `${HTTP_SERVER}/api/quizzes`;
 
 /* ---------------------------------------------------
    COURSES
@@ -96,7 +91,6 @@ export const enrollIntoCourse = async (userId: string, courseId: string) => {
   return response.data;
 };
 
-
 /* ---------------------------------------------------
    MODULES
 --------------------------------------------------- */
@@ -140,49 +134,46 @@ export const updateModule = async (
    ASSIGNMENTS
 --------------------------------------------------- */
 export const findAssignmentsForCourse = async (
-    courseId: string
-  ): Promise<Assignment[]> => {
-    const { data } = await axios.get(`${COURSES_API}/${courseId}/assignments`);
-    return data as Assignment[];
-  };
-  
+  courseId: string
+): Promise<Assignment[]> => {
+  const { data } = await axios.get(`${COURSES_API}/${courseId}/assignments`);
+  return data as Assignment[];
+};
 
-  export const findAssignmentById = async (
-    assignmentId: string
-  ): Promise<Assignment> => {
-    const { data } = await axios.get(`${ASSIGNMENTS_API}/${assignmentId}`);
-    return data as Assignment;
-  };
+export const findAssignmentById = async (
+  assignmentId: string
+): Promise<Assignment> => {
+  const { data } = await axios.get(`${ASSIGNMENTS_API}/${assignmentId}`);
+  return data as Assignment;
+};
 
-  export const createAssignmentForCourse = async (
-    courseId: string,
-    assignment: Omit<Assignment, "_id">
-  ): Promise<Assignment> => {  
-    const { data } = await axiosWithCredentials.post(
-      `${COURSES_API}/${courseId}/assignments`,
-      assignment
-    );
-    return data as Assignment;
-  };
-  
+export const createAssignmentForCourse = async (
+  courseId: string,
+  assignment: Omit<Assignment, "_id">
+): Promise<Assignment> => {
+  const { data } = await axiosWithCredentials.post(
+    `${COURSES_API}/${courseId}/assignments`,
+    assignment
+  );
+  return data;
+};
 
-  export const deleteAssignment = async (
-    assignmentId: string
-  ): Promise<{ message: string }> => {
-    const { data } = await axios.delete(`${ASSIGNMENTS_API}/${assignmentId}`);
-    return data;
-  };
+export const deleteAssignment = async (
+  assignmentId: string
+): Promise<{ message: string }> => {
+  const { data } = await axios.delete(`${ASSIGNMENTS_API}/${assignmentId}`);
+  return data;
+};
 
 export const updateAssignment = async (
-    assignment: Assignment
-  ): Promise<Assignment> => {
-    const { data } = await axios.put(
-      `${ASSIGNMENTS_API}/${assignment._id}`,
-      assignment
-    );
-    return data as Assignment;
-  };
-  
+  assignment: Assignment
+): Promise<Assignment> => {
+  const { data } = await axios.put(
+    `${ASSIGNMENTS_API}/${assignment._id}`,
+    assignment
+  );
+  return data;
+};
 
 /* ---------------------------------------------------
    ENROLLMENTS
@@ -195,114 +186,93 @@ export const fetchEnrollments = async (
   );
   return data;
 };
-  
-  export const enrollInCourse = async (
-    userId: string,
-    courseId: string
-  ): Promise<Enrollment> => {
-    const { data } = await axiosWithCredentials.post(ENROLLMENTS_API, {
-      userId,
-      courseId,
-    });
-    return data as Enrollment;
-  };
-  
-  export const unenrollFromCourse = async (userId: string, courseId: string) => {
-    const response = await axiosWithCredentials.delete(
-      `${USERS_API}/${userId}/courses/${courseId}`
-    );
-    return response.data;
-  };
 
-  export const findUsersForCourse = async (courseId: string) => {
-    const response = await axios.get(`${COURSES_API}/${courseId}/users`);
-    return response.data;
-   };   
+export const enrollInCourse = async (
+  userId: string,
+  courseId: string
+): Promise<Enrollment> => {
+  const { data } = await axiosWithCredentials.post(ENROLLMENTS_API, {
+    userId,
+    courseId,
+  });
+  return data;
+};
 
-const BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000";
+export const unenrollFromCourse = async (userId: string, courseId: string) => {
+  const response = await axiosWithCredentials.delete(
+    `${USERS_API}/${userId}/courses/${courseId}`
+  );
+  return response.data;
+};
 
-/* -----------------------------
-   QUIZZES API
-------------------------------*/
+export const findUsersForCourse = async (courseId: string) => {
+  const response = await axios.get(`${COURSES_API}/${courseId}/users`);
+  return response.data;
+};
 
-// Get quizzes for a course
+/* ---------------------------------------------------
+   QUIZZES (NEW, FIXED PART ONLY)
+--------------------------------------------------- */
 export const findQuizzesForCourse = async (courseId: string) => {
-  const response = await axios.get(
-    `${BASE}/api/courses/${courseId}/quizzes`,
-    { withCredentials: true }
+  const { data } = await axiosWithCredentials.get(
+    `${COURSES_API}/${courseId}/quizzes`
   );
-  return response.data;
+  return data;
 };
 
-// Create new quiz for a course
 export const createQuizForCourse = async (courseId: string) => {
-  const response = await axios.post(
-    `${BASE}/api/courses/${courseId}/quizzes`,
-    {},
-    { withCredentials: true }
+  const { data } = await axiosWithCredentials.post(
+    `${COURSES_API}/${courseId}/quizzes`,
+    {}
   );
-  return response.data;
+  return data;
 };
 
-// Get a quiz by ID
 export const findQuizById = async (quizId: string) => {
-  const response = await axios.get(
-    `${BASE}/api/quizzes/${quizId}`,
-    { withCredentials: true }
-  );
-  return response.data;
+  const { data } = await axiosWithCredentials.get(`${QUIZZES_API}/${quizId}`);
+  return data;
 };
 
 export const updateQuiz = async (quizId: string, quiz: Quiz): Promise<Quiz> => {
-  const response = await axios.put(
-    `${BASE}/api/quizzes/${quizId}`,
-    quiz,
-    { withCredentials: true }
+  const { data } = await axiosWithCredentials.put(
+    `${QUIZZES_API}/${quizId}`,
+    quiz
   );
-  return response.data as Quiz;
+  return data;
 };
 
-// Delete a quiz
 export const deleteQuiz = async (quizId: string) => {
-  const response = await axios.delete(
-    `${BASE}/api/quizzes/${quizId}`,
-    { withCredentials: true }
+  const { data } = await axiosWithCredentials.delete(
+    `${QUIZZES_API}/${quizId}`
   );
-  return response.data;
+  return data;
 };
 
 export const saveQuizQuestions = async (
   quizId: string,
   questions: Question[]
 ): Promise<Quiz> => {
-  const response = await axios.put(
-    `${BASE}/api/quizzes/${quizId}/questions`,
-    { questions },
-    { withCredentials: true }
+  const { data } = await axiosWithCredentials.put(
+    `${QUIZZES_API}/${quizId}/questions`,
+    { questions }
   );
-  return response.data as Quiz;
+  return data;
 };
 
 export const submitQuizAttempt = async (
   quizId: string,
-  answers: Answer[]
+  payload: { answers: Answer[]; score: number }
 ) => {
-  const response = await axios.post(
-    `${BASE}/api/quizzes/${quizId}/attempts`,
-    { answers },
-    { withCredentials: true }
+  const { data } = await axiosWithCredentials.post(
+    `${QUIZZES_API}/${quizId}/attempts`,
+    payload
   );
-  return response.data;
+  return data;
 };
 
-// Get last attempt of current user
 export const findMyLastAttempt = async (quizId: string) => {
-  const response = await axios.get(
-    `${BASE}/api/quizzes/${quizId}/attempts/me`,
-    { withCredentials: true }
+  const { data } = await axiosWithCredentials.get(
+    `${QUIZZES_API}/${quizId}/attempts/me`
   );
-  return response.data;
+  return data;
 };
-
-  
-  

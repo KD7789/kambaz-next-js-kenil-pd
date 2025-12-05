@@ -70,7 +70,17 @@ export default function QuizList() {
   --------------------------- */
   const loadQuizzes = useCallback(async () => {
     const data: Quiz[] = await client.findQuizzesForCourse(cid as string);
-    dispatch(setQuizzes(data));
+
+// If student, load last attempt score
+if (currentUser?.role === "STUDENT") {
+  for (const quiz of data) {
+    const attempt = await client.findMyLastAttempt(quiz._id);
+    if (attempt) quiz.lastScore = attempt.score;
+  }
+}
+
+dispatch(setQuizzes(data));
+
   }, [cid, dispatch]);
 
   useEffect(() => {
@@ -159,9 +169,17 @@ export default function QuizList() {
 
               {/* Metadata */}
               <div className="text-muted" style={{ fontSize: "14px" }}>
-                {quiz.published ? "Published" : "Unpublished"} •{" "}
-                {quiz.points} pts • {(quiz.questions || []).length} questions
-              </div>
+  {quiz.published ? "Published" : "Unpublished"} 
+  • {getAvailability(quiz)}
+  • {quiz.points} pts 
+  • {(quiz.questions || []).length} questions
+
+  {/* Student score */}
+  {!isFaculty && quiz.lastScore != null && (
+    <> • Score: {quiz.lastScore} / {quiz.points}</>
+  )}
+</div>
+
             </div>
 
             {/* Faculty-only icons */}
@@ -196,6 +214,23 @@ export default function QuizList() {
       </ul>
     </div>
   );
+}
+
+/* ---------------------------
+   Availability Helper
+--------------------------- */
+function getAvailability(quiz: Quiz): string {
+  const now = new Date();
+  const from = quiz.availableFrom ? new Date(quiz.availableFrom) : null;
+  const until = quiz.availableUntil ? new Date(quiz.availableUntil) : null;
+
+  if (from && now < from) {
+    return `Not available until ${from.toLocaleDateString()}`;
+  }
+  if (until && now > until) {
+    return "Closed";
+  }
+  return "Available";
 }
 
 /* ==========================================

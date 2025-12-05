@@ -4,38 +4,27 @@ import { useEffect, useCallback, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../../../../store";
+import { v4 as uuid } from "uuid";
 
-import { setCurrentQuiz, updateQuizInStore } from "../../reducer";
+import { setCurrentQuiz, updateQuizInStore, type Quiz } from "../../reducer";
 import * as client from "../../../../client";
 
 import { Button, Form } from "react-bootstrap";
 import { FaPlus } from "react-icons/fa";
 
-import type { Quiz } from "../../reducer";
 import type { Question } from "../../types";
+import dynamic from "next/dynamic";
+
+const SimpleMDE = dynamic(() => import("react-simplemde-editor"), {
+  ssr: false,
+});
+
+import "easymde/dist/easymde.min.css";
 
 
 /* -------------------------------------------------
-   Full Strong Types
+   QUESTIONS EDITOR
 --------------------------------------------------- */
-
-interface MCQChoice {
-  _id: string;
-  text: string;
-  isCorrect: boolean;
-}
-
-interface QuestionType {
-  _id: string;
-  type: "MCQ" | "TRUE_FALSE" | "FILL_IN_BLANK";
-  title: string;
-  points: number;
-  text: string;
-
-  choices?: MCQChoice[];
-  correctBoolean?: boolean;
-  acceptableAnswers?: string[];
-}
 
 export default function QuestionsEditor() {
   const { cid, qid } = useParams<{ cid: string; qid: string }>();
@@ -46,15 +35,15 @@ export default function QuestionsEditor() {
     (state: RootState) => state.quizzesReducer.currentQuiz
   );
 
-  const [questions, setQuestions] = useState<QuestionType[]>([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
 
   /* -------------------------------------------------
-     Load quiz (useCallback → ESLint fix)
+     Load quiz + questions
   --------------------------------------------------- */
   const loadQuiz = useCallback(async () => {
     const q: Quiz = await client.findQuizById(qid);
     dispatch(setCurrentQuiz(q));
-    setQuestions(q.questions || []);
+    setQuestions(q.questions ?? []);
   }, [dispatch, qid]);
 
   useEffect(() => {
@@ -62,18 +51,18 @@ export default function QuestionsEditor() {
   }, [loadQuiz]);
 
   /* -------------------------------------------------
-     Add new question
+     Add new question (default MCQ)
   --------------------------------------------------- */
   const addQuestion = () => {
-    const newQuestion: QuestionType = {
-      _id: Date.now().toString(),
+    const newQuestion: Question = {
+      _id: uuid(),
       type: "MCQ",
       title: "New Question",
       points: 1,
       text: "",
       choices: [
-        { _id: "1", text: "Option 1", isCorrect: true },
-        { _id: "2", text: "Option 2", isCorrect: false },
+        { _id: uuid(), text: "Option 1", isCorrect: true },
+        { _id: uuid(), text: "Option 2", isCorrect: false },
       ],
     };
 
@@ -83,10 +72,10 @@ export default function QuestionsEditor() {
   /* -------------------------------------------------
      Update a question field
   --------------------------------------------------- */
-  const updateQuestion = <K extends keyof QuestionType>(
+  const updateQuestion = <K extends keyof Question>(
     index: number,
     field: K,
-    value: QuestionType[K]
+    value: Question[K]
   ) => {
     setQuestions((prev) => {
       const updated = [...prev];
@@ -98,49 +87,42 @@ export default function QuestionsEditor() {
   /* -------------------------------------------------
      Change question type
   --------------------------------------------------- */
-  const changeType = (
-    index: number,
-    newType: QuestionType["type"]
-  ) => {
-    const oldQ = questions[index];
-
-    const base: QuestionType = {
-      _id: oldQ._id,
-      type: newType,
-      title: oldQ.title,
-      points: oldQ.points,
-      text: oldQ.text,
-    };
-
-    let newQuestion: QuestionType = base;
-
-    if (newType === "MCQ") {
-      newQuestion = {
-        ...base,
-        choices: [
-          { _id: "1", text: "Option 1", isCorrect: true },
-          { _id: "2", text: "Option 2", isCorrect: false },
-        ],
-      };
-    }
-
-    if (newType === "TRUE_FALSE") {
-      newQuestion = {
-        ...base,
-        correctBoolean: true,
-      };
-    }
-
-    if (newType === "FILL_IN_BLANK") {
-      newQuestion = {
-        ...base,
-        acceptableAnswers: [""],
-      };
-    }
-
+  const changeType = (index: number, newType: Question["type"]) => {
     setQuestions((prev) => {
+      const current = prev[index];
+
+      const base: Question = {
+        _id: current._id,
+        type: newType,
+        title: current.title,
+        points: current.points,
+        text: current.text,
+      };
+
+      let next: Question = base;
+
+      if (newType === "MCQ") {
+        next = {
+          ...base,
+          choices: [
+            { _id: uuid(), text: "Option 1", isCorrect: true },
+            { _id: uuid(), text: "Option 2", isCorrect: false },
+          ],
+        };
+      } else if (newType === "TRUE_FALSE") {
+        next = {
+          ...base,
+          correctBoolean: true,
+        };
+      } else if (newType === "FILL_IN_BLANK") {
+        next = {
+          ...base,
+          acceptableAnswers: [""],
+        };
+      }
+
       const updated = [...prev];
-      updated[index] = newQuestion;
+      updated[index] = next;
       return updated;
     });
   };
@@ -153,15 +135,13 @@ export default function QuestionsEditor() {
 
     if (!quiz) return;
 
-dispatch(
-  updateQuizInStore({
-    ...quiz!, // force non-null
-    questions,
-    points: questions.reduce((sum, q) => sum + q.points, 0),
-  })
-);
+    const updatedQuiz: Quiz = {
+      ...quiz,
+      questions,
+      points: questions.reduce((sum, q) => sum + (q.points ?? 0), 0),
+    };
 
-
+    dispatch(updateQuizInStore(updatedQuiz));
     router.push(`/Courses/${cid}/Quizzes/${qid}`);
   };
 
@@ -180,28 +160,29 @@ dispatch(
   };
 
   /* -------------------------------------------------
-     RENDER QUESTION TYPE EDITOR
+     Render per question type
   --------------------------------------------------- */
-  const renderEditor = (q: QuestionType, index: number) => {
+  const renderEditor = (q: Question, index: number) => {
     /* ------------ MCQ ------------ */
     if (q.type === "MCQ") {
       return (
         <div className="mt-3">
           <Form.Label>Choices</Form.Label>
 
-          {q.choices?.map((c, i) => (
+          {q.choices?.map((c) => (
             <div key={c._id} className="d-flex align-items-center mb-2">
               {/* correct choice selector */}
               <Form.Check
                 type="radio"
-                name={`correct-${index}`}
+                name={`correct-${q._id}`}
                 checked={c.isCorrect}
                 onChange={() => {
-                  const updated = q.choices!.map((opt, idx) => ({
-                    ...opt,
-                    isCorrect: idx === i,
-                  }));
-                  updateQuestion(index, "choices", updated);
+                  const updatedChoices =
+                    q.choices?.map((choice) => ({
+                      ...choice,
+                      isCorrect: choice._id === c._id,
+                    })) ?? [];
+                  updateQuestion(index, "choices", updatedChoices);
                 }}
                 style={{ marginRight: "10px" }}
               />
@@ -210,22 +191,25 @@ dispatch(
               <Form.Control
                 value={c.text}
                 onChange={(e) => {
-                  const updated = [...q.choices!];
-                  updated[i] = { ...updated[i], text: e.target.value };
-                  updateQuestion(index, "choices", updated);
+                  const updatedChoices =
+                    q.choices?.map((choice) =>
+                      choice._id === c._id
+                        ? { ...choice, text: e.target.value }
+                        : choice
+                    ) ?? [];
+                  updateQuestion(index, "choices", updatedChoices);
                 }}
               />
 
-              {/* delete choice */}
+              {/* delete choice (only the choice, not the whole question) */}
               <Button
                 variant="outline-danger"
                 size="sm"
                 className="ms-2"
                 onClick={() => {
-                  const updated = q.choices!.filter(
-                    (opt) => opt._id !== c._id
-                  );
-                  updateQuestion(index, "choices", updated);
+                  const updatedChoices =
+                    q.choices?.filter((choice) => choice._id !== c._id) ?? [];
+                  updateQuestion(index, "choices", updatedChoices);
                 }}
               >
                 X
@@ -238,15 +222,15 @@ dispatch(
             className="mt-2"
             variant="secondary"
             onClick={() => {
-              const updated = [
-                ...(q.choices || []),
+              const updatedChoices = [
+                ...(q.choices ?? []),
                 {
-                  _id: String((q.choices?.length || 0) + 1),
+                  _id: uuid(),
                   text: "New Choice",
                   isCorrect: false,
                 },
               ];
-              updateQuestion(index, "choices", updated);
+              updateQuestion(index, "choices", updatedChoices);
             }}
           >
             + Choice
@@ -262,14 +246,14 @@ dispatch(
           <Form.Check
             type="radio"
             label="True"
-            name={`tf-${index}`}
+            name={`tf-${q._id}`}
             checked={q.correctBoolean === true}
             onChange={() => updateQuestion(index, "correctBoolean", true)}
           />
           <Form.Check
             type="radio"
             label="False"
-            name={`tf-${index}`}
+            name={`tf-${q._id}`}
             checked={q.correctBoolean === false}
             onChange={() => updateQuestion(index, "correctBoolean", false)}
           />
@@ -279,18 +263,19 @@ dispatch(
 
     /* ------------ FILL IN BLANK ------------ */
     if (q.type === "FILL_IN_BLANK") {
+      const answers = q.acceptableAnswers ?? [];
       return (
         <div className="mt-3">
           <Form.Label>Correct Answers</Form.Label>
 
-          {(q.acceptableAnswers || []).map((ans, i) => (
-            <div key={i} className="d-flex align-items-center mb-2">
+          {answers.map((ans, i) => (
+            <div key={`${q._id}-${i}`} className="d-flex align-items-center mb-2">
               <Form.Control
                 value={ans}
                 onChange={(e) => {
-                  const updated = [...q.acceptableAnswers!];
-                  updated[i] = e.target.value;
-                  updateQuestion(index, "acceptableAnswers", updated);
+                  const newAnswers = [...answers];
+                  newAnswers[i] = e.target.value;
+                  updateQuestion(index, "acceptableAnswers", newAnswers);
                 }}
               />
               <Button
@@ -298,10 +283,8 @@ dispatch(
                 size="sm"
                 className="ms-2"
                 onClick={() => {
-                  const updated = q.acceptableAnswers!.filter(
-                    (_, idx) => idx !== i
-                  );
-                  updateQuestion(index, "acceptableAnswers", updated);
+                  const newAnswers = answers.filter((_, idx) => idx !== i);
+                  updateQuestion(index, "acceptableAnswers", newAnswers);
                 }}
               >
                 X
@@ -314,8 +297,8 @@ dispatch(
             className="mt-2"
             variant="secondary"
             onClick={() => {
-              const updated = [...(q.acceptableAnswers || []), ""];
-              updateQuestion(index, "acceptableAnswers", updated);
+              const newAnswers = [...answers, ""];
+              updateQuestion(index, "acceptableAnswers", newAnswers);
             }}
           >
             + Answer
@@ -376,7 +359,7 @@ dispatch(
             <Form.Select
               value={q.type}
               onChange={(e) =>
-                changeType(index, e.target.value as QuestionType["type"])
+                changeType(index, e.target.value as Question["type"])
               }
             >
               <option value="MCQ">Multiple Choice</option>
@@ -408,18 +391,21 @@ dispatch(
             />
           </Form.Group>
 
-          {/* Prompt */}
+          {/* Prompt (WYSIWYG) */}
           <Form.Group className="mt-2">
-            <Form.Label>Prompt</Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={2}
-              value={q.text}
-              onChange={(e) => updateQuestion(index, "text", e.target.value)}
-            />
-          </Form.Group>
+  <Form.Label>Prompt</Form.Label>
+  <SimpleMDE
+    value={q.text}
+    onChange={(value: string) => updateQuestion(index, "text", value)}
+    options={{
+      spellChecker: false,
+      placeholder: "Enter question prompt...",
+    }}
+  />
+</Form.Group>
 
-          {/* Dynamic editor */}
+
+          {/* Type-specific editor */}
           {renderEditor(q, index)}
         </div>
       ))}
