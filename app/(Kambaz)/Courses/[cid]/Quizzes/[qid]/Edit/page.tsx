@@ -10,9 +10,8 @@ import * as client from "../../../../client";
 import { Button, Form } from "react-bootstrap";
 import dynamic from "next/dynamic";
 
-const SimpleMDE = dynamic(() => import("react-simplemde-editor"), {
-  ssr: false,
-});
+import JoditEditorWrapper from "../../../../../Components/JoditEditorWrapper";
+
 import "easymde/dist/easymde.min.css";
 
 
@@ -119,15 +118,16 @@ export default function QuizEditor() {
         {/* Description (WYSIWYG) */}
         <Form.Group className="mb-3">
   <Form.Label>Description</Form.Label>
-  <SimpleMDE
+  <JoditEditorWrapper
     value={localQuiz.description || ""}
-    onChange={(v) => updateField("description", v)}
-    options={{
-      spellChecker: false,
-      placeholder: "Enter quiz description...",
-    }}
+    onChange={(v: string) =>
+      setLocalQuiz((prev) =>
+        prev ? { ...prev, description: v } : prev
+      )
+    }
   />
 </Form.Group>
+
 
 
 

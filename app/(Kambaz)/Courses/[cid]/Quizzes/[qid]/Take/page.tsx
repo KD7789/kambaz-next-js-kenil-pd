@@ -177,7 +177,7 @@ export default function TakeQuiz() {
       router.push(`/Courses/${cid}/Quizzes/${qid}/Results`);
     } catch (err) {
       console.error("Submit failed:", err);
-      alert("Submission failed.");
+      alert("Attempts limit reached.");
     }
   };
 
