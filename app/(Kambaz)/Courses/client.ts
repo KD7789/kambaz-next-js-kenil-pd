@@ -241,9 +241,10 @@ export const findQuizById = async (quizId: string) => {
 };
 
 export const updateQuiz = async (quizId: string, quiz: Quiz): Promise<Quiz> => {
+  const { _id, ...rest } = quiz;
   const { data } = await axiosWithCredentials.put(
     `${QUIZZES_API}/${quizId}`,
-    quiz
+    rest
   );
   return data;
 };
