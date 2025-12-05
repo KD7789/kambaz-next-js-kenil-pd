@@ -187,6 +187,13 @@ export const fetchEnrollments = async (
   return data;
 };
 
+export const findCoursesForUser = async (userId: string): Promise<Course[]> => {
+  const { data } = await axiosWithCredentials.get(
+    `${USERS_API}/${userId}/courses`
+  );
+  return data;
+};
+
 export const enrollInCourse = async (
   userId: string,
   courseId: string
@@ -261,14 +268,14 @@ export const saveQuizQuestions = async (
 
 export const submitQuizAttempt = async (
   quizId: string,
-  payload: { answers: Answer[]; score: number }
+  payload: { answers: Answer[]; score: number; accessCode?: string }
 ) => {
-  const { data } = await axiosWithCredentials.post(
+  return axiosWithCredentials.post(
     `${QUIZZES_API}/${quizId}/attempts`,
     payload
   );
-  return data;
 };
+
 
 export const findMyLastAttempt = async (quizId: string) => {
   const { data } = await axiosWithCredentials.get(

@@ -181,22 +181,34 @@ export default function TakeQuiz() {
      Submit attempt
   --------------------------------------------*/
   const submit = async () => {
-    const formattedAnswers = Object.entries(answers).map(
+    // Convert AnswerMap → Answer[]
+    const answerArray = Object.entries(answers).map(
       ([questionId, answerText]) => ({
         questionId,
         answerText,
       })
     );
-
+  
     const score = computeScore();
-
-    await client.submitQuizAttempt(qid, {
-      answers: formattedAnswers,
-      score,
-    });
-
-    router.push(`/Courses/${cid}/Quizzes/${qid}/Results`);
+  
+    try {
+      await client.submitQuizAttempt(qid, {
+        answers: answerArray,
+        score,
+        accessCode: accessCodeInput || undefined,
+      });
+  
+      router.push(`/Courses/${cid}/Quizzes/${qid}/Results`);
+    } catch (err) {
+      console.error("Submit failed:", err);
+      alert("Submission failed.");
+    }
   };
+  
+  
+  
+
+   
 
   /* -----------------------------------------
      One-question-at-a-time navigation
