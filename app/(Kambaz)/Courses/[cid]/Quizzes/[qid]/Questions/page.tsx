@@ -43,7 +43,7 @@ export default function QuestionsEditor() {
   const loadQuiz = useCallback(async () => {
     const q: Quiz = await client.findQuizById(qid);
     dispatch(setCurrentQuiz(q));
-    setQuestions(q.questions ?? []);
+    setQuestions((q.questions ?? []).map(q => ({ ...q, editing: false })));
   }, [dispatch, qid]);
 
   useEffect(() => {
@@ -60,6 +60,7 @@ export default function QuestionsEditor() {
       title: "New Question",
       points: 1,
       text: "",
+      editing: false,
       choices: [
         { _id: uuid(), text: "Option 1", isCorrect: true },
         { _id: uuid(), text: "Option 2", isCorrect: false },
@@ -127,6 +128,8 @@ export default function QuestionsEditor() {
     });
   };
 
+  const [backup, setBackup] = useState<Record<string, Question>>({});
+
   /* -------------------------------------------------
      Save to backend
   --------------------------------------------------- */
@@ -158,6 +161,14 @@ export default function QuestionsEditor() {
   const goToDetails = () => {
     router.push(`/Courses/${cid}/Quizzes/${qid}/Edit`);
   };
+
+  const setEditing = (index: number, editing: boolean) => {
+    setQuestions(prev => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], editing };
+      return copy;
+    });
+  };  
 
   /* -------------------------------------------------
      Render per question type
@@ -333,91 +344,146 @@ export default function QuestionsEditor() {
       </Button>
 
       {questions.map((q, index) => (
-        <div
-          key={q._id}
-          className="border rounded p-3 mb-3"
-          style={{ background: "#fafafa" }}
-        >
-          {/* Header */}
-          <div className="d-flex justify-content-between align-items-center">
-            <strong>{q.title}</strong>
+  <div
+    key={q._id}
+    className="border rounded p-3 mb-3"
+    style={{ background: "#fafafa" }}
+  >
+    {/* ======================== PREVIEW MODE ======================== */}
+    {!q.editing && (
+      <>
+        <div className="d-flex justify-content-between align-items-center">
+          <strong>{q.title}</strong>
+
+          <div className="d-flex gap-2">
+          <Button
+  size="sm"
+  variant="outline-secondary"
+  onClick={() => {
+    setBackup(prev => ({ ...prev, [q._id]: { ...q } }));
+    setEditing(index, true);
+  }}
+>
+  Edit
+</Button>
+
 
             <Button
               size="sm"
               variant="outline-danger"
               onClick={() =>
-                setQuestions((prev) => prev.filter((_, i) => i !== index))
+                setQuestions(prev => prev.filter((_, i) => i !== index))
               }
             >
               Delete
             </Button>
           </div>
-
-          {/* Question Type */}
-          <Form.Group className="mt-2">
-            <Form.Label>Question Type</Form.Label>
-            <Form.Select
-              value={q.type}
-              onChange={(e) =>
-                changeType(index, e.target.value as Question["type"])
-              }
-            >
-              <option value="MCQ">Multiple Choice</option>
-              <option value="TRUE_FALSE">True / False</option>
-              <option value="FILL_IN_BLANK">Fill in the Blank</option>
-            </Form.Select>
-          </Form.Group>
-
-          {/* Title */}
-          <Form.Group className="mt-2">
-            <Form.Label>Title</Form.Label>
-            <Form.Control
-              value={q.title}
-              onChange={(e) =>
-                updateQuestion(index, "title", e.target.value)
-              }
-            />
-          </Form.Group>
-
-          {/* Points */}
-          <Form.Group className="mt-2">
-            <Form.Label>Points</Form.Label>
-            <Form.Control
-              type="number"
-              value={q.points}
-              onChange={(e) =>
-                updateQuestion(index, "points", Number(e.target.value))
-              }
-            />
-          </Form.Group>
-
-          {/* Prompt (WYSIWYG) */}
-          <Form.Group className="mt-2">
-  <Form.Label>Prompt</Form.Label>
-  <SimpleMDE
-    value={q.text}
-    onChange={(value: string) => updateQuestion(index, "text", value)}
-    options={{
-      spellChecker: false,
-      placeholder: "Enter question prompt...",
-    }}
-  />
-</Form.Group>
-
-
-          {/* Type-specific editor */}
-          {renderEditor(q, index)}
         </div>
-      ))}
 
-      <div className="mt-4 d-flex gap-3">
-        <Button variant="danger" onClick={saveAll}>
-          Save
-        </Button>
-        <Button variant="secondary" onClick={cancel}>
-          Cancel
-        </Button>
-      </div>
-    </div>
+        <div className="mt-2">Type: {q.type}</div>
+        <div>Points: {q.points}</div>
+      </>
+    )}
+
+    {/* ======================== EDIT MODE ======================== */}
+    {q.editing && (
+      <>
+        {/* Header */}
+        <div className="d-flex justify-content-between align-items-center">
+          <strong>Editing: {q.title}</strong>
+        </div>
+
+        {/* Question Type */}
+        <Form.Group className="mt-2">
+          <Form.Label>Question Type</Form.Label>
+          <Form.Select
+            value={q.type}
+            onChange={(e) =>
+              changeType(index, e.target.value as Question["type"])
+            }
+          >
+            <option value="MCQ">Multiple Choice</option>
+            <option value="TRUE_FALSE">True / False</option>
+            <option value="FILL_IN_BLANK">Fill in the Blank</option>
+          </Form.Select>
+        </Form.Group>
+
+        {/* Title */}
+        <Form.Group className="mt-2">
+          <Form.Label>Title</Form.Label>
+          <Form.Control
+            value={q.title}
+            onChange={(e) => updateQuestion(index, "title", e.target.value)}
+          />
+        </Form.Group>
+
+        {/* Points */}
+        <Form.Group className="mt-2">
+          <Form.Label>Points</Form.Label>
+          <Form.Control
+            type="number"
+            value={q.points}
+            onChange={(e) =>
+              updateQuestion(index, "points", Number(e.target.value))
+            }
+          />
+        </Form.Group>
+
+        {/* Prompt */}
+        <Form.Group className="mt-2">
+          <Form.Label>Prompt</Form.Label>
+          <SimpleMDE
+            value={q.text}
+            onChange={(value: string) =>
+              updateQuestion(index, "text", value)
+            }
+            options={{
+              spellChecker: false,
+              placeholder: "Enter question prompt...",
+            }}
+          />
+        </Form.Group>
+
+        {/* Type-specific editor */}
+        {renderEditor(q, index)}
+
+        {/* Save / Cancel */}
+        <div className="mt-3 d-flex gap-2">
+          <Button
+            size="sm"
+            variant="success"
+            onClick={() => setEditing(index, false)}
+          >
+            Save
+          </Button>
+
+          <Button
+  size="sm"
+  variant="secondary"
+  onClick={() => {
+    setQuestions(prev => {
+      const copy = [...prev];
+      const original = backup[q._id];
+
+      if (original) {
+        copy[index] = original;  // restore backup safely
+      }
+
+      return copy;
+    });
+
+    setEditing(index, false);
+  }}
+>
+  Cancel
+</Button>
+
+        </div>
+      </>
+    )}
+  </div>
+))}
+ </div>
   );
 }
+
