@@ -166,29 +166,40 @@ export default function QuizEditor() {
 
         {/* Shuffle Answers (Missing earlier) */}
         <Form.Group className="mb-3">
-          <Form.Label>Shuffle Answers</Form.Label>
-          <Form.Select
-            value={localQuiz.shuffleAnswers ? "YES" : "NO"}
-            onChange={(e) =>
-              updateField("shuffleAnswers", e.target.value === "YES")
-            }
-          >
-            <option value="YES">Yes</option>
-            <option value="NO">No</option>
-          </Form.Select>
-        </Form.Group>
+  <Form.Check
+    type="checkbox"
+    label="Shuffle Answers"
+    checked={localQuiz.shuffleAnswers}
+    onChange={(e) => updateField("shuffleAnswers", e.target.checked)}
+  />
+</Form.Group>
+
 
         {/* Time Limit */}
         <Form.Group className="mb-3">
-          <Form.Label>Time Limit (minutes)</Form.Label>
-          <Form.Control
-            type="number"
-            value={localQuiz.timeLimit}
-            onChange={(e) =>
-              updateField("timeLimit", Number(e.target.value))
-            }
-          />
-        </Form.Group>
+  <Form.Check
+    type="checkbox"
+    label="Time Limit"
+    checked={!!localQuiz.timeLimit}   // timeLimit > 0 means enabled
+    onChange={(e) =>
+      updateField("timeLimit", e.target.checked ? 20 : 0) // default: 30 mins
+    }
+  />
+
+  {localQuiz.timeLimit > 0 && (
+    <div className="mt-2">
+      <Form.Label>Minutes</Form.Label>
+      <Form.Control
+        type="number"
+        value={localQuiz.timeLimit}
+        onChange={(e) =>
+          updateField("timeLimit", Number(e.target.value))
+        }
+      />
+    </div>
+  )}
+</Form.Group>
+
 
         {/* Multiple Attempts */}
         <Form.Group className="mb-3">
@@ -217,16 +228,17 @@ export default function QuizEditor() {
           )}
         </Form.Group>
 
-        {/* Show Correct Answers */}
         <Form.Group className="mb-3">
-          <Form.Label>Show Correct Answers</Form.Label>
-          <Form.Control
-            value={localQuiz.showCorrectAnswers}
-            onChange={(e) =>
-              updateField("showCorrectAnswers", e.target.value)
-            }
-          />
-        </Form.Group>
+  <Form.Label>Show Correct Answers</Form.Label>
+  <Form.Select
+    value={localQuiz.showCorrectAnswers}
+    onChange={(e) => updateField("showCorrectAnswers", e.target.value)}
+  >
+    <option value="IMMEDIATELY">Immediately</option>
+    <option value="AFTER_DUE_DATE">After Due Date</option>
+    <option value="NEVER">Never</option>
+  </Form.Select>
+</Form.Group>
 
         {/* Access Code */}
         <Form.Group className="mb-3">
