@@ -289,5 +289,6 @@ export const findMyLastAttempt = async (quizId: string) => {
   const { data } = await axiosWithCredentials.get(
     `${QUIZZES_API}/${quizId}/attempts/me`
   );
-  return data;
+  return Array.isArray(data) ? data[0] : data;
 };
+

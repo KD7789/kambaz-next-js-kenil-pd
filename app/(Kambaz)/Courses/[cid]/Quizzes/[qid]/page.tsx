@@ -228,31 +228,45 @@ return (
 
     {/* Start / Retake button */}
     <div className="mt-4">
-      {currentQuiz.published && (
-        <Button
-          variant="danger"
-          onClick={() =>
-            router.push(`/Courses/${cid}/Quizzes/${qid}/Take`)
-          }
-          disabled={
-            currentQuiz.multipleAttempts &&
-            lastAttempt &&
-            lastAttempt.attemptNumber >= currentQuiz.howManyAttempts
-          }
-        >
-          {lastAttempt ? "Retake Quiz" : "Take Quiz"}
-        </Button>
-      )}
-
-      {/* Out-of-attempts message */}
-      {currentQuiz.multipleAttempts &&
+  {currentQuiz.published && (
+    <Button
+      variant="danger"
+      onClick={() =>
+        router.push(`/Courses/${cid}/Quizzes/${qid}/Take`)
+      }
+      disabled={
+        currentQuiz.multipleAttempts &&
         lastAttempt &&
-        lastAttempt.attemptNumber >= currentQuiz.howManyAttempts && (
-          <div className="text-danger mt-2">
-            You have used all allowed attempts for this quiz.
-          </div>
-        )}
+        lastAttempt.attemptNumber >= currentQuiz.howManyAttempts
+      }
+    >
+      {lastAttempt ? "Retake Quiz" : "Take Quiz"}
+    </Button>
+  )}
+
+  {currentQuiz.multipleAttempts &&
+    lastAttempt &&
+    lastAttempt.attemptNumber >= currentQuiz.howManyAttempts && (
+      <div className="text-danger mt-2">
+        You have used all allowed attempts for this quiz.
+      </div>
+  )}
+
+  {/* ✅ NEW BUTTON */}
+  {lastAttempt && (
+    <div className="mt-3">
+      <Button
+        variant="secondary"
+        onClick={() =>
+          router.push(`/Courses/${cid}/Quizzes/${qid}/Results`)
+        }
+      >
+        View What You Answered Last Time
+      </Button>
     </div>
+  )}
+</div>
+
   </div>
 );
 

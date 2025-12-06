@@ -40,8 +40,10 @@ export default function TakeQuiz() {
     dispatch(setCurrentQuiz(q));
 
     if (q.multipleAttempts) {
-      const attempt: Attempt = await client.findMyLastAttempt(qid);
+      const attempt = await client.findMyLastAttempt(qid);
       dispatch(setMyAttempt({ quizId: qid, attempt }));
+      
+
     }
 
     const initial: AnswerMap = {};

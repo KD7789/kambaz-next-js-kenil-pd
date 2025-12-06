@@ -53,8 +53,9 @@ export default function QuizResults() {
     const q: Quiz = await client.findQuizById(qid);
     dispatch(setCurrentQuiz(q));
 
-    const attempt: Attempt = await client.findMyLastAttempt(qid);
+    const attempt = await client.findMyLastAttempt(qid);
     dispatch(setMyAttempt({ quizId: qid, attempt }));
+    
   }, [dispatch, qid]);
 
   useEffect(() => {
@@ -77,9 +78,23 @@ export default function QuizResults() {
     );
   }
 
-  if (!quiz || !lastAttempt) {
-    return <div style={{ padding: "20px" }}>Loading...</div>;
-  }
+  if (!quiz) return <div>Loading...</div>;
+
+if (lastAttempt === undefined) {
+  return <div>Loading...</div>;
+}
+
+if (lastAttempt === null) {
+  return (
+    <div style={{ padding: 20 }}>
+      <h3>No attempts found</h3>
+      <Button onClick={() => router.push(`/Courses/${cid}/Quizzes/${qid}/Take`)}>
+        Take Quiz
+      </Button>
+    </div>
+  );
+}
+
 
   const questions = quiz.questions || [];
   const answerList = lastAttempt.answers || [];
