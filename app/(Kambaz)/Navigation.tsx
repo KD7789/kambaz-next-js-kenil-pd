@@ -28,6 +28,7 @@ export default function KambazNavigation() {
     { label: "Calendar", path: "https://northeastern.instructure.com/calendar", icon: IoCalendarOutline, external: true },
     { label: "Inbox", path: "https://northeastern.instructure.com/conversations", icon: FaInbox, external: true },
     { label: "Labs", path: "/Labs", icon: LiaCogSolid, external: false },
+    { label: "Landing", path: "/Landing", icon: LiaBookSolid, external: false },
   ];
 
   const isActive = (label: string, path: string) => {
