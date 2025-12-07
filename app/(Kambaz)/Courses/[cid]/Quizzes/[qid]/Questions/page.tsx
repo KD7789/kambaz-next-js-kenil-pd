@@ -15,11 +15,8 @@ import { FaPlus } from "react-icons/fa";
 import type { Question } from "../../types";
 import dynamic from "next/dynamic";
 
-const SimpleMDE = dynamic(() => import("react-simplemde-editor"), {
-  ssr: false,
-});
+import JoditEditorWrapper from "../../../../../Components/JoditEditorWrapper";
 
-import "easymde/dist/easymde.min.css";
 
 
 /* -------------------------------------------------
@@ -350,40 +347,46 @@ export default function QuestionsEditor() {
     style={{ background: "#fafafa" }}
   >
     {/* ======================== PREVIEW MODE ======================== */}
-    {!q.editing && (
-      <>
-        <div className="d-flex justify-content-between align-items-center">
-          <strong>{q.title}</strong>
+{!q.editing && (
+  <>
+    <div className="d-flex justify-content-between align-items-center">
+      <strong>{q.title}</strong>
 
-          <div className="d-flex gap-2">
-          <Button
-  size="sm"
-  variant="outline-secondary"
-  onClick={() => {
-    setBackup(prev => ({ ...prev, [q._id]: { ...q } }));
-    setEditing(index, true);
-  }}
->
-  Edit
-</Button>
+      <div className="d-flex gap-2">
+        <Button
+          size="sm"
+          variant="outline-secondary"
+          onClick={() => {
+            setBackup(prev => ({ ...prev, [q._id]: { ...q } }));
+            setEditing(index, true);
+          }}
+        >
+          Edit
+        </Button>
 
+        <Button
+          size="sm"
+          variant="outline-danger"
+          onClick={() =>
+            setQuestions(prev => prev.filter((_, i) => i !== index))
+          }
+        >
+          Delete
+        </Button>
+      </div>
+    </div>
 
-            <Button
-              size="sm"
-              variant="outline-danger"
-              onClick={() =>
-                setQuestions(prev => prev.filter((_, i) => i !== index))
-              }
-            >
-              Delete
-            </Button>
-          </div>
-        </div>
+    <div className="mt-2">Type: {q.type}</div>
+    <div>Points: {q.points}</div>
 
-        <div className="mt-2">Type: {q.type}</div>
-        <div>Points: {q.points}</div>
-      </>
-    )}
+    {/* ⭐ SHOW QUESTION PROMPT (HTML) IN PREVIEW MODE ⭐ */}
+    <div
+      className="mt-3"
+      dangerouslySetInnerHTML={{ __html: q.text || "" }}
+    />
+  </>
+)}
+
 
     {/* ======================== EDIT MODE ======================== */}
     {q.editing && (
@@ -431,18 +434,15 @@ export default function QuestionsEditor() {
 
         {/* Prompt */}
         <Form.Group className="mt-2">
-          <Form.Label>Prompt</Form.Label>
-          <SimpleMDE
-            value={q.text}
-            onChange={(value: string) =>
-              updateQuestion(index, "text", value)
-            }
-            options={{
-              spellChecker: false,
-              placeholder: "Enter question prompt...",
-            }}
-          />
-        </Form.Group>
+  <Form.Label>Prompt</Form.Label>
+  <JoditEditorWrapper
+    value={q.text || ""}
+    onChange={(value: string) =>
+      updateQuestion(index, "text", value)
+    }
+  />
+</Form.Group>
+
 
         {/* Type-specific editor */}
         {renderEditor(q, index)}

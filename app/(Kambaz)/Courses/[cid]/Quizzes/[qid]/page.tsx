@@ -79,7 +79,11 @@ export default function QuizDetails() {
       <div style={{ padding: "20px" }}>
         <h3>{currentQuiz.title}</h3>
 
-        <p className="text-muted">{currentQuiz.description}</p>
+        <div
+  className="text-muted"
+  dangerouslySetInnerHTML={{ __html: currentQuiz.description || "" }}
+/>
+
 
 <div className="text-muted mb-3">
   <strong>Status: </strong>
@@ -190,7 +194,10 @@ export default function QuizDetails() {
 return (
   <div style={{ padding: "20px" }}>
     <h3>{currentQuiz.title}</h3>
-    <p className="text-muted">{currentQuiz.description}</p>
+    <div
+  className="text-muted"
+  dangerouslySetInnerHTML={{ __html: currentQuiz.description || "" }}
+/>
 
     {/* Availability / Score info */}
     <div className="mt-3">
