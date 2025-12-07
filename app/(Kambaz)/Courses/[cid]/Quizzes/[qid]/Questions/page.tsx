@@ -483,6 +483,17 @@ export default function QuestionsEditor() {
     )}
   </div>
 ))}
+{/* SAVE / CANCEL ALL QUESTIONS */}
+<div className="mt-4 d-flex gap-3">
+  <Button variant="danger" onClick={saveAll}>
+    Save All Questions
+  </Button>
+
+  <Button variant="secondary" onClick={cancel}>
+    Cancel
+  </Button>
+</div>
+
  </div>
   );
 }
