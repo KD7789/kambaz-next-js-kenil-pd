@@ -33,6 +33,8 @@ export default function PreviewQuiz() {
   const [answers, setAnswers] = useState<AnswerMap>({});
   const [submitted, setSubmitted] = useState(false);
 
+  const [currentIndex, setCurrentIndex] = useState(0);
+
   /* -----------------------------------------
      Load quiz (with type safety)
   --------------------------------------------*/
@@ -56,6 +58,21 @@ export default function PreviewQuiz() {
   if (!quiz) {
     return <div style={{ padding: "20px" }}>Loading...</div>;
   }
+  
+  const questions: Question[] = quiz.questions || [];
+  
+  const goNext = () => {
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    }
+  };
+  
+  const goPrev = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
+  };
+  
 
   if (!isFaculty) {
     return (
@@ -64,8 +81,6 @@ export default function PreviewQuiz() {
       </div>
     );
   }
-
-  const questions: Question[] = quiz.questions || [];
 
   /* -----------------------------------------
      Evaluate correctness
@@ -225,6 +240,8 @@ export default function PreviewQuiz() {
   /* -----------------------------------------
      Main Render
   --------------------------------------------*/
+  const q = questions[currentIndex];
+
   return (
     <div style={{ padding: "20px" }}>
       <h3>Preview: {quiz.title}</h3>
@@ -239,46 +256,70 @@ export default function PreviewQuiz() {
         </h5>
       )}
 
-      {questions.map((q, idx) => (
-        <div
-          key={q._id}
-          className="border rounded p-3 mb-4"
-          style={{ background: "#fafafa" }}
-        >
-          <h5>
-            Question {idx + 1} ({q.points} pts)
-          </h5>
+<div
+  key={q._id}
+  className="border rounded p-3 mb-4"
+  style={{ background: "#fafafa" }}
+>
+  <h5>
+    Question {currentIndex + 1} of {questions.length} ({q.points} pts)
+  </h5>
 
-          <div dangerouslySetInnerHTML={{ __html: q.text }} />
+  <div dangerouslySetInnerHTML={{ __html: q.text }} />
 
-          {renderQuestion(q)}
-        </div>
-      ))}
+  {renderQuestion(q)}
+</div>
 
-      {!submitted ? (
-        <Button variant="danger" onClick={submitPreview}>
-          Submit Preview
-        </Button>
-      ) : (
-        <>
-          <Button
-            variant="secondary"
-            onClick={() =>
-              router.push(`/Courses/${cid}/Quizzes/${qid}/Edit`)
-            }
-          >
-            Edit Quiz
-          </Button>
 
-          <Button
-            variant="danger"
-            className="ms-2"
-            onClick={() => setSubmitted(false)}
-          >
-            Try Again
-          </Button>
-        </>
-      )}
+<div className="d-flex justify-content-between mt-4 mb-4">
+  <Button
+    variant="secondary"
+    disabled={currentIndex === 0}
+    onClick={goPrev}
+  >
+    Previous
+  </Button>
+
+  {!submitted && (
+    <Button
+      variant="secondary"
+      disabled={currentIndex === questions.length - 1}
+      onClick={goNext}
+    >
+      Next
+    </Button>
+  )}
+</div>
+
+<div className="mt-4">
+  {!submitted ? (
+    currentIndex === questions.length - 1 ? (
+      <Button variant="danger" onClick={submitPreview}>
+        Submit Preview
+      </Button>
+    ) : null
+  ) : (
+    <>
+      <Button
+        variant="secondary"
+        onClick={() =>
+          router.push(`/Courses/${cid}/Quizzes/${qid}/Edit`)
+        }
+      >
+        Edit Quiz
+      </Button>
+
+      <Button
+        variant="danger"
+        className="ms-2"
+        onClick={() => setSubmitted(false)}
+      >
+        Try Again
+      </Button>
+    </>
+  )}
+</div>
+
     </div>
   );
 }
