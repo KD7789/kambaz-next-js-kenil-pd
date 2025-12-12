@@ -2,10 +2,6 @@
 
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-/* ==========================================
-   TYPES
-========================================== */
-
 export interface MCQChoice {
   _id: string;
   text: string;
@@ -67,14 +63,10 @@ export interface Quiz {
   lastScore?: number;
 }
 
-/* ==========================================
-   STATE
-========================================== */
-
 interface QuizzesState {
   quizzes: Quiz[];
   currentQuiz: Quiz | null;
-  myAttempts: Record<string, Attempt>; // key = quizId
+  myAttempts: Record<string, Attempt>; 
   loading: boolean;
   error: string | null;
 }
@@ -87,15 +79,10 @@ const initialState: QuizzesState = {
   error: null,
 };
 
-/* ==========================================
-   SLICE
-========================================== */
-
 const quizzesSlice = createSlice({
   name: "quizzes",
   initialState,
   reducers: {
-    /* ----------- Quizzes List ----------- */
 
     setQuizzes(state, action: PayloadAction<Quiz[]>) {
       state.quizzes = action.payload;
@@ -119,13 +106,9 @@ const quizzesSlice = createSlice({
       state.quizzes = state.quizzes.filter((q) => q._id !== action.payload);
     },
 
-    /* ----------- Single Quiz ----------- */
-
     setCurrentQuiz(state, action: PayloadAction<Quiz | null>) {
       state.currentQuiz = action.payload;
     },
-
-    /* ----------- Attempts ----------- */
 
     setMyAttempt(
       state,
@@ -139,8 +122,6 @@ const quizzesSlice = createSlice({
       }
     },
 
-    /* ----------- UI State ----------- */
-
     setLoading(state, action: PayloadAction<boolean>) {
       state.loading = action.payload;
     },
@@ -150,10 +131,6 @@ const quizzesSlice = createSlice({
     },
   },
 });
-
-/* ==========================================
-   EXPORTS
-========================================== */
 
 export const {
   setQuizzes,

@@ -14,7 +14,7 @@ export interface Question {
     choices?: { _id: string; text: string; isCorrect: boolean }[];
     correctBoolean?: boolean;
     acceptableAnswers?: string[];
-    editing?: boolean;   // <-- add this
+    editing?: boolean;   
 
   }
   

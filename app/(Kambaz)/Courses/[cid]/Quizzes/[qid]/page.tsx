@@ -11,7 +11,7 @@ import {
   setMyAttempt,
 } from "../reducer";
 
-import * as client from "../../../client"; // API client
+import * as client from "../../../client"; 
 
 import { Button } from "react-bootstrap";
 
@@ -44,9 +44,6 @@ export default function QuizDetails() {
     return "Available";
   }   
 
-  /* -----------------------------------------
-     Load quiz details + my last attempt
-  --------------------------------------------*/
   const loadData = useCallback(async () => {
     const quiz = await client.findQuizById(qid);
     dispatch(setCurrentQuiz(quiz));
@@ -70,10 +67,6 @@ export default function QuizDetails() {
 
   const lastAttempt = myAttempts[qid];
 
-
-  /* -----------------------------------------
-     Render for Faculty
-  --------------------------------------------*/
   if (isFaculty) {
     return (
       <div style={{ padding: "20px" }}>
@@ -146,8 +139,6 @@ export default function QuizDetails() {
   {currentQuiz.lockQuestionsAfterAnswering ? "Yes" : "No"}
 </div>
 
-
-        {/* Dates */}
         <div className="mt-3">
           <strong>Available From:</strong>{" "}
           {currentQuiz.availableFrom || "—"}
@@ -160,7 +151,6 @@ export default function QuizDetails() {
           <strong>Due Date:</strong> {currentQuiz.dueDate || "—"}
         </div>
 
-        {/* Buttons */}
         <div className="mt-4 d-flex gap-3">
           <Button
             variant="secondary"
@@ -184,13 +174,6 @@ export default function QuizDetails() {
     );
   }
 
-
-  /* -----------------------------------------
-     Render for Students
-  --------------------------------------------*/
-  /* -----------------------------------------
-   Render for Students
---------------------------------------------*/
 return (
   <div style={{ padding: "20px" }}>
     <h3>{currentQuiz.title}</h3>
@@ -199,7 +182,6 @@ return (
   dangerouslySetInnerHTML={{ __html: currentQuiz.description || "" }}
 />
 
-    {/* Availability / Score info */}
     <div className="mt-3">
       <div>
         <strong>Points:</strong> {currentQuiz.points}
@@ -219,21 +201,18 @@ return (
 
     </div>
 
-    {/* Unpublished warning */}
     {!currentQuiz.published && (
       <div className="alert alert-warning mt-3">
         This quiz is not yet available.
       </div>
     )}
 
-    {/* Access Code message (always shown if needed) */}
     {currentQuiz.accessCode && (
       <div className="alert alert-info mt-3">
         This quiz requires an access code before starting.
       </div>
     )}
 
-    {/* Start / Retake button */}
     <div className="mt-4">
   {currentQuiz.published && (
     <Button
@@ -259,7 +238,6 @@ return (
       </div>
   )}
 
-  {/* ✅ NEW BUTTON */}
   {lastAttempt && (
     <div className="mt-3">
       <Button

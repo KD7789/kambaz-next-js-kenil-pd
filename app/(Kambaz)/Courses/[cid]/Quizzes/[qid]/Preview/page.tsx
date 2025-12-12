@@ -11,7 +11,6 @@ import { Button, Form } from "react-bootstrap";
 import type { Quiz } from "../../reducer";
 import type { Question } from "../../types";
 
-/* Student-style answer map for preview */
 type AnswerMap = Record<string, string>;
 
 export default function PreviewQuiz() {
@@ -35,9 +34,6 @@ export default function PreviewQuiz() {
 
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  /* -----------------------------------------
-     Load quiz (with type safety)
-  --------------------------------------------*/
   const loadQuiz = useCallback(async () => {
     const data: Quiz = await client.findQuizById(qid);
     dispatch(setCurrentQuiz(data));
@@ -82,9 +78,6 @@ export default function PreviewQuiz() {
     );
   }
 
-  /* -----------------------------------------
-     Evaluate correctness
-  --------------------------------------------*/
   const isCorrect = (q: Question, ans: string): boolean => {
     if (q.type === "MCQ") {
       return Boolean(q.choices?.find((c) => c._id === ans)?.isCorrect);
@@ -113,29 +106,17 @@ export default function PreviewQuiz() {
       }, 0)
     : 0;
 
-  /* -----------------------------------------
-     Save answer locally
-  --------------------------------------------*/
   const handleChange = (questionId: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
-  /* -----------------------------------------
-     Submit (does NOT hit backend)
-  --------------------------------------------*/
   const submitPreview = () => {
     setSubmitted(true);
   };
 
-  /* -----------------------------------------
-     Render question UI
-  --------------------------------------------*/
   const renderQuestion = (q: Question) => {
     const studentAnswer = answers[q._id] || "";
 
-    /* -------------------------------------
-       After Submission — Feedback Mode
-    ----------------------------------------*/
     if (submitted) {
       const correct = isCorrect(q, studentAnswer);
 
@@ -183,9 +164,6 @@ export default function PreviewQuiz() {
       );
     }
 
-    /* -------------------------------------
-       Before Submission — Input Mode
-    ----------------------------------------*/
     if (q.type === "MCQ") {
       return (
         <div className="mt-2">
@@ -237,9 +215,6 @@ export default function PreviewQuiz() {
     return null;
   };
 
-  /* -----------------------------------------
-     Main Render
-  --------------------------------------------*/
   const q = questions[currentIndex];
 
   return (

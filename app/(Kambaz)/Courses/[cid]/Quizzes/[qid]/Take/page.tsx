@@ -12,9 +12,6 @@ import { Button, Form } from "react-bootstrap";
 import type { Question } from "../../types";
 import type { Quiz, Attempt } from "../../reducer";
 
-/* -----------------------------------------
-   Types
---------------------------------------------*/
 type AnswerMap = Record<string, string>;
 
 export default function TakeQuiz() {
@@ -30,11 +27,8 @@ export default function TakeQuiz() {
   const [accessCodeInput, setAccessCodeInput] = useState("");
   const [accessGranted, setAccessGranted] = useState(false);
 
-  const [index, setIndex] = useState(0); // for one-question-at-a-time
+  const [index, setIndex] = useState(0); 
 
-  /* -----------------------------------------
-     Load quiz + last attempt
-  --------------------------------------------*/
   const loadQuiz = useCallback(async () => {
     const q: Quiz = await client.findQuizById(qid);
     dispatch(setCurrentQuiz(q));
@@ -51,7 +45,7 @@ export default function TakeQuiz() {
       initial[question._id] = "";
     });
     setAnswers(initial);
-    setLockedAnswers({}); // reset lock state when loading quiz
+    setLockedAnswers({}); 
   }, [dispatch, qid]);
 
   useEffect(() => {
@@ -62,9 +56,6 @@ export default function TakeQuiz() {
 
   const questions = quiz.questions || [];
 
-  /* -----------------------------------------
-     1️⃣ Availability Checks
-  --------------------------------------------*/
   const now = new Date();
   const from = quiz.availableFrom ? new Date(quiz.availableFrom) : null;
   const until = quiz.availableUntil ? new Date(quiz.availableUntil) : null;
@@ -81,9 +72,6 @@ export default function TakeQuiz() {
     return <div className="p-4 alert alert-danger">This quiz is closed.</div>;
   }
 
-  /* -----------------------------------------
-     2️⃣ Attempt Limit
-  --------------------------------------------*/
   if (quiz.multipleAttempts && myAttempts && myAttempts.attemptNumber >= quiz.howManyAttempts) {
     return (
       <div className="p-4 alert alert-danger">
@@ -92,9 +80,6 @@ export default function TakeQuiz() {
     );
   }
 
-  /* -----------------------------------------
-     3️⃣ Access Code
-  --------------------------------------------*/
   if (quiz.accessCode && !accessGranted) {
     return (
       <div style={{ padding: "20px" }}>
@@ -121,20 +106,13 @@ export default function TakeQuiz() {
     );
   }
 
-  /* -----------------------------------------
-     Update per-question answer
-  --------------------------------------------*/
   const handleChange = (questionId: string, value: string) => {
-    // 🚫 Prevent changing locked questions
     if (quiz.lockQuestionsAfterAnswering && lockedAnswers[questionId]) {
       return;
     }
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
-  /* -----------------------------------------
-     Compute score
-  --------------------------------------------*/
   const computeScore = () => {
     let score = 0;
 
@@ -159,9 +137,6 @@ export default function TakeQuiz() {
     return score;
   };
 
-  /* -----------------------------------------
-     Submit attempt
-  --------------------------------------------*/
   const submit = async () => {
     const answerArray = Object.entries(answers).map(([questionId, answerText]) => ({
       questionId,
@@ -183,14 +158,10 @@ export default function TakeQuiz() {
     }
   };
 
-  /* -----------------------------------------
-     Next button logic with locking
-  --------------------------------------------*/
   const goNext = () => {
     const currentQuestion = questions[index];
     if (!currentQuestion) return;
 
-    // ✅ Lock the answer when moving forward
     if (quiz.lockQuestionsAfterAnswering) {
       setLockedAnswers((prev) => ({
         ...prev,
@@ -201,9 +172,6 @@ export default function TakeQuiz() {
     setIndex(index + 1);
   };
 
-  /* -----------------------------------------
-     Render single question
-  --------------------------------------------*/
   const renderQuestion = (q: Question) => {
     const value = answers[q._id] || "";
 
@@ -258,14 +226,10 @@ export default function TakeQuiz() {
     return null;
   };
 
-  /* -----------------------------------------
-     Main Render
-  --------------------------------------------*/
   return (
     <div style={{ padding: "20px" }}>
       <h3>{quiz.title}</h3>
 
-      {/* Multi-question-at-once */}
       {!quiz.oneQuestionAtATime && (
         <>
           {questions.map((q, idx) => (
@@ -282,7 +246,6 @@ export default function TakeQuiz() {
         </>
       )}
 
-      {/* One Question At A Time */}
       {quiz.oneQuestionAtATime && questions[index] && (
         <div className="border rounded p-3 mb-4" style={{ background: "#fafafa" }}>
           <h5>
@@ -294,7 +257,6 @@ export default function TakeQuiz() {
 
           <div className="d-flex justify-content-between mt-3">
 
-            {/* Previous allowed only when NOT locked */}
             {!quiz.lockQuestionsAfterAnswering && (
               <Button disabled={index === 0} onClick={() => setIndex(index - 1)}>
                 Previous

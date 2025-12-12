@@ -17,12 +17,6 @@ import dynamic from "next/dynamic";
 
 import JoditEditorWrapper from "../../../../../Components/JoditEditorWrapper";
 
-
-
-/* -------------------------------------------------
-   QUESTIONS EDITOR
---------------------------------------------------- */
-
 export default function QuestionsEditor() {
   const { cid, qid } = useParams<{ cid: string; qid: string }>();
   const dispatch = useDispatch();
@@ -34,9 +28,6 @@ export default function QuestionsEditor() {
 
   const [questions, setQuestions] = useState<Question[]>([]);
 
-  /* -------------------------------------------------
-     Load quiz + questions
-  --------------------------------------------------- */
   const loadQuiz = useCallback(async () => {
     const q: Quiz = await client.findQuizById(qid);
     dispatch(setCurrentQuiz(q));
@@ -47,9 +38,6 @@ export default function QuestionsEditor() {
     loadQuiz();
   }, [loadQuiz]);
 
-  /* -------------------------------------------------
-     Add new question (default MCQ)
-  --------------------------------------------------- */
   const addQuestion = () => {
     const newQuestion: Question = {
       _id: uuid(),
@@ -67,9 +55,6 @@ export default function QuestionsEditor() {
     setQuestions((prev) => [...prev, newQuestion]);
   };
 
-  /* -------------------------------------------------
-     Update a question field
-  --------------------------------------------------- */
   const updateQuestion = <K extends keyof Question>(
     index: number,
     field: K,
@@ -82,9 +67,6 @@ export default function QuestionsEditor() {
     });
   };
 
-  /* -------------------------------------------------
-     Change question type
-  --------------------------------------------------- */
   const changeType = (index: number, newType: Question["type"]) => {
     setQuestions((prev) => {
       const current = prev[index];
@@ -95,6 +77,7 @@ export default function QuestionsEditor() {
         title: current.title,
         points: current.points,
         text: current.text,
+        editing: current.editing,
       };
 
       let next: Question = base;
@@ -127,9 +110,6 @@ export default function QuestionsEditor() {
 
   const [backup, setBackup] = useState<Record<string, Question>>({});
 
-  /* -------------------------------------------------
-     Save to backend
-  --------------------------------------------------- */
   const saveAll = async () => {
     await client.saveQuizQuestions(qid, questions);
 
@@ -145,16 +125,10 @@ export default function QuestionsEditor() {
     router.push(`/Courses/${cid}/Quizzes/${qid}`);
   };
 
-  /* -------------------------------------------------
-     Cancel
-  --------------------------------------------------- */
   const cancel = () => {
     router.push(`/Courses/${cid}/Quizzes/${qid}`);
   };
 
-  /* -------------------------------------------------
-     Back to Details
-  --------------------------------------------------- */
   const goToDetails = () => {
     router.push(`/Courses/${cid}/Quizzes/${qid}/Edit`);
   };
@@ -167,11 +141,7 @@ export default function QuestionsEditor() {
     });
   };  
 
-  /* -------------------------------------------------
-     Render per question type
-  --------------------------------------------------- */
   const renderEditor = (q: Question, index: number) => {
-    /* ------------ MCQ ------------ */
     if (q.type === "MCQ") {
       return (
         <div className="mt-3">
@@ -179,7 +149,6 @@ export default function QuestionsEditor() {
 
           {q.choices?.map((c) => (
             <div key={c._id} className="d-flex align-items-center mb-2">
-              {/* correct choice selector */}
               <Form.Check
                 type="radio"
                 name={`correct-${q._id}`}
@@ -195,7 +164,6 @@ export default function QuestionsEditor() {
                 style={{ marginRight: "10px" }}
               />
 
-              {/* text input */}
               <Form.Control
                 value={c.text}
                 onChange={(e) => {
@@ -209,7 +177,6 @@ export default function QuestionsEditor() {
                 }}
               />
 
-              {/* delete choice (only the choice, not the whole question) */}
               <Button
                 variant="outline-danger"
                 size="sm"
@@ -247,7 +214,6 @@ export default function QuestionsEditor() {
       );
     }
 
-    /* ------------ TRUE / FALSE ------------ */
     if (q.type === "TRUE_FALSE") {
       return (
         <div className="mt-3">
@@ -269,7 +235,6 @@ export default function QuestionsEditor() {
       );
     }
 
-    /* ------------ FILL IN BLANK ------------ */
     if (q.type === "FILL_IN_BLANK") {
       const answers = q.acceptableAnswers ?? [];
       return (
@@ -318,9 +283,6 @@ export default function QuestionsEditor() {
     return null;
   };
 
-  /* -------------------------------------------------
-     MAIN RENDER
-  --------------------------------------------------- */
   return (
     <div style={{ padding: "20px" }}>
       <h3>Quiz Questions</h3>
@@ -346,7 +308,6 @@ export default function QuestionsEditor() {
     className="border rounded p-3 mb-3"
     style={{ background: "#fafafa" }}
   >
-    {/* ======================== PREVIEW MODE ======================== */}
 {!q.editing && (
   <>
     <div className="d-flex justify-content-between align-items-center">
@@ -379,7 +340,6 @@ export default function QuestionsEditor() {
     <div className="mt-2">Type: {q.type}</div>
     <div>Points: {q.points}</div>
 
-    {/* ⭐ SHOW QUESTION PROMPT (HTML) IN PREVIEW MODE ⭐ */}
     <div
       className="mt-3"
       dangerouslySetInnerHTML={{ __html: q.text || "" }}
@@ -387,16 +347,12 @@ export default function QuestionsEditor() {
   </>
 )}
 
-
-    {/* ======================== EDIT MODE ======================== */}
     {q.editing && (
       <>
-        {/* Header */}
         <div className="d-flex justify-content-between align-items-center">
           <strong>Editing: {q.title}</strong>
         </div>
 
-        {/* Question Type */}
         <Form.Group className="mt-2">
           <Form.Label>Question Type</Form.Label>
           <Form.Select
@@ -411,7 +367,6 @@ export default function QuestionsEditor() {
           </Form.Select>
         </Form.Group>
 
-        {/* Title */}
         <Form.Group className="mt-2">
           <Form.Label>Title</Form.Label>
           <Form.Control
@@ -420,7 +375,6 @@ export default function QuestionsEditor() {
           />
         </Form.Group>
 
-        {/* Points */}
         <Form.Group className="mt-2">
           <Form.Label>Points</Form.Label>
           <Form.Control
@@ -432,7 +386,6 @@ export default function QuestionsEditor() {
           />
         </Form.Group>
 
-        {/* Prompt */}
         <Form.Group className="mt-2">
   <Form.Label>Prompt</Form.Label>
   <JoditEditorWrapper
@@ -443,11 +396,8 @@ export default function QuestionsEditor() {
   />
 </Form.Group>
 
-
-        {/* Type-specific editor */}
         {renderEditor(q, index)}
 
-        {/* Save / Cancel */}
         <div className="mt-3 d-flex gap-2">
           <Button
             size="sm"
@@ -466,7 +416,7 @@ export default function QuestionsEditor() {
       const original = backup[q._id];
 
       if (original) {
-        copy[index] = original;  // restore backup safely
+        copy[index] = original;  
       }
 
       return copy;
@@ -483,7 +433,6 @@ export default function QuestionsEditor() {
     )}
   </div>
 ))}
-{/* SAVE / CANCEL ALL QUESTIONS */}
 <div className="mt-4 d-flex gap-3">
   <Button variant="danger" onClick={saveAll}>
     Save All Questions

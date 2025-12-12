@@ -13,19 +13,12 @@ import type { Question } from "../../types";
 
 import { Button } from "react-bootstrap";
 
-/* -------------------------------------------------
-   Helper Types
---------------------------------------------------- */
-
 interface MCQChoice {
   _id: string;
   text: string;
   isCorrect: boolean;
 }
 
-/* -------------------------------------------------
-   Component
---------------------------------------------------- */
 
 export default function QuizResults() {
   const { cid, qid } = useParams<{ cid: string; qid: string }>();
@@ -46,9 +39,6 @@ export default function QuizResults() {
 
   const lastAttempt: Attempt | undefined = attempts[qid];
 
-  /* -------------------------------------------------
-     Load quiz + last attempt
-  --------------------------------------------------- */
   const loadData = useCallback(async () => {
     const q: Quiz = await client.findQuizById(qid);
     dispatch(setCurrentQuiz(q));
@@ -62,9 +52,6 @@ export default function QuizResults() {
     loadData();
   }, [loadData]);
 
-  /* -------------------------------------------------
-     Faculty should not access results screen
-  --------------------------------------------------- */
   if (user?.role === "FACULTY") {
     return (
       <div style={{ padding: "20px" }}>
@@ -99,9 +86,6 @@ if (lastAttempt === null) {
   const questions = quiz.questions || [];
   const answerList = lastAttempt.answers || [];
 
-  /* -------------------------------------------------
-     Determine if student is allowed to see correct answers
-  --------------------------------------------------- */
   function canShowCorrectAnswers(): boolean {
     if (!quiz) return false;
   
@@ -114,16 +98,12 @@ if (lastAttempt === null) {
       return new Date() > new Date(quiz.dueDate);
     }
   
-    // IMMEDIATELY or any other value → show
     return true;
   }  
   
 
   const allowCorrectAnswers = canShowCorrectAnswers();
 
-  /* -------------------------------------------------
-     Is the answer correct?
-  --------------------------------------------------- */
   const isCorrect = (q: Question, studentAnswer: string): boolean => {
     if (!allowCorrectAnswers) return false;
 
@@ -147,9 +127,6 @@ if (lastAttempt === null) {
     return false;
   };
 
-  /* -------------------------------------------------
-     Render Feedback Block
-  --------------------------------------------------- */
   const renderFeedback = (q: Question, studentAnswer: string) => {
     const correct = isCorrect(q, studentAnswer);
 
@@ -170,7 +147,6 @@ if (lastAttempt === null) {
             : "1px solid #bbb",
         }}
       >
-        {/* Correctness title */}
         <strong
           style={{
             color: allowCorrectAnswers
@@ -187,7 +163,6 @@ if (lastAttempt === null) {
             : "Answer Submitted"}
         </strong>
 
-        {/* Always show student's answer */}
         {q.type === "MCQ" && (
           <div style={{ marginTop: "5px" }}>
             <b>Your answer:</b>{" "}
@@ -231,9 +206,6 @@ if (lastAttempt === null) {
     );
   };
 
-  /* -------------------------------------------------
-     MAIN RENDER
-  --------------------------------------------------- */
   return (
     <div style={{ padding: "20px" }}>
       <h3>{quiz.title} — Results</h3>

@@ -17,10 +17,6 @@ import * as client from "../../client";
 import { Button } from "react-bootstrap";
 import { FaPlus, FaEllipsisV } from "react-icons/fa";
 
-/* -------------------------------------------------
-   TYPES
---------------------------------------------------- */
-
 interface QuizMenuProps {
   quiz: Quiz;
   onEdit: () => void;
@@ -29,10 +25,6 @@ interface QuizMenuProps {
   onSort: () => void;
   onTogglePublish: (quiz: Quiz) => void;
 }
-
-/* -------------------------------------------------
-   MAIN COMPONENT
---------------------------------------------------- */
 
 export default function QuizList() {
   const { cid } = useParams<{ cid: string }>();
@@ -59,7 +51,6 @@ export default function QuizList() {
     const load = async () => {
       const data: Quiz[] = await client.findQuizzesForCourse(cid as string);
   
-      // If student, add lastScore to each quiz BEFORE dispatching
       if (currentUser?.role === "STUDENT") {
         for (const quiz of data) {
           const attempt = await client.findMyLastAttempt(quiz._id);
@@ -67,41 +58,29 @@ export default function QuizList() {
         }
       }
   
-      dispatch(setQuizzes(data)); // store final list together
+      dispatch(setQuizzes(data)); 
     };
   
     load();
   }, [cid, currentUser?.role, dispatch]);  
 
-  /* ---------------------------
-       Add new quiz
-  --------------------------- */
   const handleAddQuiz = async () => {
     const quiz: Quiz = await client.createQuizForCourse(cid as string);
     dispatch(addQuiz(quiz));
     router.push(`/Courses/${cid}/Quizzes/${quiz._id}/Edit`);
   };
 
-  /* ---------------------------
-       Publish / Unpublish
-  --------------------------- */
   const togglePublish = async (quiz: Quiz) => {
     const updatedQuiz: Quiz = { ...quiz, published: !quiz.published };
     await client.updateQuiz(quiz._id, updatedQuiz);
     dispatch(updateQuizInStore(updatedQuiz));
   };
 
-  /* ---------------------------
-       Delete quiz
-  --------------------------- */
   const handleDelete = async (quizId: string) => {
     await client.deleteQuiz(quizId);
     dispatch(deleteQuizInStore(quizId));
   };
 
-  /* ---------------------------
-       EMPTY STATE
-  --------------------------- */
   if (!quizzes.length) {
     return (
       <div style={{ padding: "20px" }}>
@@ -121,11 +100,6 @@ export default function QuizList() {
     );
   }
 
-  /* ---------------------------
-       Sorting
-  --------------------------- */
-  
-
   const sortedQuizzes = [...quizzes].sort((a, b) => {
     if (!sortMethod) return 0;
     if (sortMethod === "NAME") return a.title.localeCompare(b.title);
@@ -138,7 +112,7 @@ export default function QuizList() {
   });
 
   const handleCopyQuiz = async (quiz: Quiz) => {
-    const newQuiz = await client.copyQuiz(quiz._id); // implement later
+    const newQuiz = await client.copyQuiz(quiz._id); 
     dispatch(addQuiz(newQuiz));
   };
 
@@ -150,10 +124,6 @@ export default function QuizList() {
     else if (choice === "due") setSortMethod("DUE");
     else if (choice === "available") setSortMethod("AVAILABLE");
   };
-
-  /* ---------------------------
-       RENDER
-  --------------------------- */
 
   return (
     <div style={{ padding: "20px" }}>
@@ -185,7 +155,6 @@ export default function QuizList() {
   {quiz.published ? "Published" : "Unpublished"} •{" "}
   {getAvailability(quiz)} •{" "}
 
-  {/* DUE DATE */}
   {quiz.dueDate ? (
     <>Due: {new Date(quiz.dueDate).toLocaleDateString()} • </>
   ) : (
@@ -194,7 +163,6 @@ export default function QuizList() {
 
   {quiz.points} pts • {(quiz.questions || []).length} questions
 
-  {/* Student last score */}
   {!isFaculty && quiz.lastScore != null && (
     <> • Score: {quiz.lastScore} / {quiz.points}</>
   )}
@@ -232,10 +200,6 @@ export default function QuizList() {
   );
 }
 
-/* -------------------------------------------------
-   AVAILABILITY HELPER
---------------------------------------------------- */
-
 function getAvailability(quiz: Quiz): string {
   const now = new Date();
   const from = quiz.availableFrom ? new Date(quiz.availableFrom) : null;
@@ -245,10 +209,6 @@ function getAvailability(quiz: Quiz): string {
   if (until && now > until) return "Closed";
   return "Available";
 }
-
-/* -------------------------------------------------
-   QUIZ MENU COMPONENT
---------------------------------------------------- */
 
 function QuizMenu({
   quiz,

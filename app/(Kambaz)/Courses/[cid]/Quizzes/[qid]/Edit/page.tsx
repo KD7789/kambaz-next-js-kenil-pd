@@ -18,9 +18,6 @@ import "easymde/dist/easymde.min.css";
 
 import type { Quiz } from "../../reducer";
 
-/* -----------------------------------------
-   Component
---------------------------------------------*/
 export default function QuizEditor() {
   const { cid, qid } = useParams<{ cid: string; qid: string }>();
   const dispatch = useDispatch();
@@ -32,9 +29,6 @@ export default function QuizEditor() {
 
   const [localQuiz, setLocalQuiz] = useState<Quiz | null>(null);
 
-  /* -----------------------------------------
-     Load quiz
-  --------------------------------------------*/
   const loadQuiz = useCallback(async () => {
     const q: Quiz = await client.findQuizById(qid);
     dispatch(setCurrentQuiz(q));
@@ -50,9 +44,6 @@ export default function QuizEditor() {
     return <div style={{ padding: "20px" }}>Loading...</div>;
   }
 
-  /* -----------------------------------------
-     Update field (typed)
-  --------------------------------------------*/
   const updateField = <K extends keyof Quiz>(field: K, value: Quiz[K]) => {
     setLocalQuiz((prev) => (prev ? { ...prev, [field]: value } : prev));
   };
@@ -66,9 +57,6 @@ export default function QuizEditor() {
     }
   }  
 
-  /* -----------------------------------------
-     Save actions
-  --------------------------------------------*/
   const saveOnly = async () => {
     await client.updateQuiz(qid, localQuiz);
     dispatch(updateQuizInStore(localQuiz));
@@ -86,14 +74,10 @@ export default function QuizEditor() {
   const goToQuestions = () =>
     router.push(`/Courses/${cid}/Quizzes/${qid}/Questions`);
 
-  /* -----------------------------------------
-     Render
-  --------------------------------------------*/
   return (
     <div style={{ padding: "20px" }}>
       <h3>Edit Quiz</h3>
 
-      {/* TABS */}
       <div className="d-flex gap-3 mt-3 mb-4">
         <div style={{ fontWeight: 600 }}>Details</div>
         <div
@@ -105,7 +89,6 @@ export default function QuizEditor() {
       </div>
 
       <Form style={{ maxWidth: "700px" }}>
-        {/* Title */}
         <Form.Group className="mb-3">
           <Form.Label>Title</Form.Label>
           <Form.Control
@@ -114,8 +97,6 @@ export default function QuizEditor() {
           />
         </Form.Group>
 
-        {/* Description (WYSIWYG) */}
-        {/* Description (WYSIWYG) */}
         <Form.Group className="mb-3">
   <Form.Label>Description</Form.Label>
   <JoditEditorWrapper
@@ -128,15 +109,10 @@ export default function QuizEditor() {
   />
 </Form.Group>
 
-
-
-
-        {/* Points (readonly) */}
         <div className="mb-3">
           <strong>Total Points:</strong> {localQuiz.points}
         </div>
 
-        {/* Quiz Type */}
         <Form.Group className="mb-3">
           <Form.Label>Quiz Type</Form.Label>
           <Form.Select
@@ -150,7 +126,6 @@ export default function QuizEditor() {
           </Form.Select>
         </Form.Group>
 
-        {/* Assignment Group */}
         <Form.Group className="mb-3">
           <Form.Label>Assignment Group</Form.Label>
           <Form.Select
@@ -164,7 +139,6 @@ export default function QuizEditor() {
           </Form.Select>
         </Form.Group>
 
-        {/* Shuffle Answers (Missing earlier) */}
         <Form.Group className="mb-3">
   <Form.Check
     type="checkbox"
@@ -174,15 +148,13 @@ export default function QuizEditor() {
   />
 </Form.Group>
 
-
-        {/* Time Limit */}
         <Form.Group className="mb-3">
   <Form.Check
     type="checkbox"
     label="Time Limit"
-    checked={!!localQuiz.timeLimit}   // timeLimit > 0 means enabled
+    checked={!!localQuiz.timeLimit}   
     onChange={(e) =>
-      updateField("timeLimit", e.target.checked ? 20 : 0) // default: 30 mins
+      updateField("timeLimit", e.target.checked ? 20 : 0) 
     }
   />
 
@@ -200,8 +172,6 @@ export default function QuizEditor() {
   )}
 </Form.Group>
 
-
-        {/* Multiple Attempts */}
         <Form.Group className="mb-3">
           <Form.Label>Multiple Attempts</Form.Label>
           <Form.Select
@@ -240,7 +210,6 @@ export default function QuizEditor() {
   </Form.Select>
 </Form.Group>
 
-        {/* Access Code */}
         <Form.Group className="mb-3">
           <Form.Label>Access Code</Form.Label>
           <Form.Control
@@ -249,7 +218,6 @@ export default function QuizEditor() {
           />
         </Form.Group>
 
-        {/* One Q at a Time */}
         <Form.Group className="mb-3">
           <Form.Label>One Question at a Time</Form.Label>
           <Form.Select
@@ -263,7 +231,6 @@ export default function QuizEditor() {
           </Form.Select>
         </Form.Group>
 
-        {/* Webcam Required */}
         <Form.Group className="mb-3">
           <Form.Label>Webcam Required</Form.Label>
           <Form.Select
@@ -277,7 +244,6 @@ export default function QuizEditor() {
           </Form.Select>
         </Form.Group>
 
-        {/* Lock Questions */}
         <Form.Group className="mb-3">
           <Form.Label>Lock Questions After Answering</Form.Label>
           <Form.Select
@@ -294,7 +260,6 @@ export default function QuizEditor() {
           </Form.Select>
         </Form.Group>
 
-        {/* Dates */}
         <Form.Group className="mb-3">
           <Form.Label>Available From</Form.Label>
           <Form.Control
@@ -322,7 +287,6 @@ export default function QuizEditor() {
 />
         </Form.Group>
 
-        {/* BUTTONS */}
         <div className="mt-4 d-flex gap-3">
           <Button variant="danger" onClick={saveOnly}>
             Save

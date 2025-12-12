@@ -4,9 +4,6 @@ import type { Course } from "./reducer";
 import type { Enrollment } from "../Enrollments/reducer";
 import type { Quiz, Question, Answer } from "../Courses/[cid]/Quizzes/reducer";
 
-/* ---------------------------------------------------
-   Types
---------------------------------------------------- */
 export interface Module {
   _id: string;
   name: string;
@@ -24,9 +21,6 @@ export type CreateCourseInput = Omit<Course, "_id">;
 export type CreateModuleInput = Omit<Module, "_id">;
 export type CreateAssignmentInput = Omit<Assignment, "_id">;
 
-/* ---------------------------------------------------
-   Axios with credentials
---------------------------------------------------- */
 const axiosWithCredentials = axios.create({
   withCredentials: true,
 });
@@ -42,9 +36,6 @@ export const ASSIGNMENTS_API = `${HTTP_SERVER}/api/assignments`;
 export const ENROLLMENTS_API = `${HTTP_SERVER}/api/enrollments`;
 export const QUIZZES_API = `${HTTP_SERVER}/api/quizzes`;
 
-/* ---------------------------------------------------
-   COURSES
---------------------------------------------------- */
 export const fetchAllCourses = async (): Promise<Course[]> => {
   const { data } = await axios.get(COURSES_API);
   return data;
@@ -91,9 +82,6 @@ export const enrollIntoCourse = async (userId: string, courseId: string) => {
   return response.data;
 };
 
-/* ---------------------------------------------------
-   MODULES
---------------------------------------------------- */
 export const findModulesForCourse = async (
   courseId: string
 ): Promise<Module[]> => {
@@ -130,9 +118,6 @@ export const updateModule = async (
   return data;
 };
 
-/* ---------------------------------------------------
-   ASSIGNMENTS
---------------------------------------------------- */
 export const findAssignmentsForCourse = async (
   courseId: string
 ): Promise<Assignment[]> => {
@@ -175,9 +160,6 @@ export const updateAssignment = async (
   return data;
 };
 
-/* ---------------------------------------------------
-   ENROLLMENTS
---------------------------------------------------- */
 export const fetchEnrollments = async (
   userId: string
 ): Promise<Course[]> => {
@@ -217,9 +199,6 @@ export const findUsersForCourse = async (courseId: string) => {
   return response.data;
 };
 
-/* ---------------------------------------------------
-   QUIZZES (NEW, FIXED PART ONLY)
---------------------------------------------------- */
 export const findQuizzesForCourse = async (courseId: string) => {
   const { data } = await axiosWithCredentials.get(
     `${COURSES_API}/${courseId}/quizzes`
