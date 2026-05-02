@@ -31,7 +31,7 @@ kambaz-next-js-kenil-pd/
 │   ├── Dashboard/        # Course listing dashboard
 │   ├── Courses/
 │   │   └── [cid]/        # Dynamic course pages (Home, Modules, Assignments, People)
-│   ├── Labs/             # Lab exercises (Lab1, Lab2, Lab3)
+│   ├── Labs/             # Lab exercises 
 │   ├── Calendar/
 │   ├── Inbox/
 │   └── layout.tsx        # Root layout with shared nav
