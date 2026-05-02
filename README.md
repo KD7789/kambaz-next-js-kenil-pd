@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Kambaz – Next.js
+
+A Canvas-inspired course management web app built with Next.js and TypeScript, developed as part of **CS5610 Web Development** at Northeastern University.
+
+## Overview
+
+Kambaz is a simplified learning management system (LMS) modeled after Canvas. It supports student and instructor workflows including sign-in/sign-up, a course dashboard, per-course module navigation, and more. The app also includes a Labs section that demos core HTML/CSS/JS concepts covered throughout the course.
+
+## Features
+
+- **Authentication** – Sign in, sign up, and profile pages under `/Account`
+- **Dashboard** – Lists all published courses with navigation links
+- **Course Pages** – Each course has Home, Modules, Assignments, People, and Grades tabs
+- **Module View** – Collapsible weekly modules with learning objectives, readings, and slides
+- **Labs** – Multi-lab exercises covering HTML tags, forms, tables, lists, images, and CSS
+- **Navigation** – Persistent top nav with links to Dashboard, Calendar, Inbox, and Labs
+
+## Tech Stack
+
+- [Next.js](https://nextjs.org/) (App Router)
+- TypeScript
+- CSS Modules
+- Deployed on [Vercel](https://vercel.com/)
+
+## Project Structure
+
+```
+kambaz-next-js-kenil-pd/
+├── app/
+│   ├── Account/          # Signin, Signup, Profile pages
+│   ├── Dashboard/        # Course listing dashboard
+│   ├── Courses/
+│   │   └── [cid]/        # Dynamic course pages (Home, Modules, Assignments, People)
+│   ├── Labs/             # Lab exercises (Lab1, Lab2, Lab3)
+│   ├── Calendar/
+│   ├── Inbox/
+│   └── layout.tsx        # Root layout with shared nav
+├── public/               # Static assets
+├── next.config.ts
+├── tsconfig.json
+└── package.json
+```
 
 ## Getting Started
 
-First, run the development server:
+1. Clone the repo:
+   ```bash
+   git clone https://github.com/KD7789/kambaz-next-js-kenil-pd.git
+   cd kambaz-next-js-kenil-pd
+   ```
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. Run the development server:
+   ```bash
+   npm run dev
+   ```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Course
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+CS5610 – Web Development, Northeastern University (Fall 2025)  
